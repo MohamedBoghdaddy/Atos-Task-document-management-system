@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useContext } from "react";
-import axios from "axios";
 import { Button, Form, Table, Modal } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -12,45 +11,57 @@ import {
 import Notification from "../Dashboard/Notification";
 import "../styles/Workspace.css";
 import { DashboardContext } from "../../../context/DashboardContext";
+import { useAuthContext } from "../../../context/AuthContext"; // Import AuthContext to access the logged-in user
 
 const Workspace = () => {
+  const { user } = useAuthContext(); // Get the logged-in user from AuthContext
+
   const {
-    userData,
-    fetchUserData, // Ensure this is correctly imported or defined in DashboardContext
+    fetchWorkspaces,
+    fetchWorkspacesByUserId,
+    createWorkspace,
+    fetchDocuments,
     uploadDocument,
     deleteDocument,
     previewDocument,
     downloadDocument,
-    createWorkspace,
-    fetchWorkspaces, // Function to fetch workspaces
+    workspaces,
+    documents,
+    previewFile,
+    showPreviewModal,
+    setShowPreviewModal,
   } = useContext(DashboardContext);
 
-  const [documents, setDocuments] = useState([]);
-  const [workspaces, setWorkspaces] = useState([]);
   const [selectedWorkspace, setSelectedWorkspace] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
-  const [previewFile, setPreviewFile] = useState(null);
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
-  const [notification, setNotification] = useState(null);
   const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
   const [workspaceName, setWorkspaceName] = useState("");
   const [workspaceDescription, setWorkspaceDescription] = useState("");
   const [workspaceVisibility, setWorkspaceVisibility] = useState("private");
+  const [notification, setNotification] = useState(null);
+  const [filteredDocuments, setFilteredDocuments] = useState([]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (userData && !userData.userProfile) {
-        await fetchUserData();
-      }
+    fetchWorkspaces();
+    if (user && user._id) {
+      fetchWorkspacesByUserId(user._id);
+    }
+  }, [fetchWorkspaces, user, fetchWorkspacesByUserId]);
 
-      // Fetch the workspaces for the logged-in user
-      const fetchedWorkspaces = await fetchWorkspaces();
-      setWorkspaces(fetchedWorkspaces || []);
-    };
 
-    fetchData();
-  }, [fetchUserData, fetchWorkspaces, userData]);
+  useEffect(() => {
+    if (searchTerm.length >= 3) {
+      const filtered = documents.filter((doc) =>
+        doc.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredDocuments(filtered);
+    } else {
+      setFilteredDocuments(documents);
+    }
+  }, [searchTerm, documents]);
+
+
 
   const handleWorkspaceCreation = async (event) => {
     event.preventDefault();
@@ -66,10 +77,8 @@ const Workspace = () => {
         type: "success",
         message: "Workspace created successfully!",
       });
-      setShowWorkspaceModal(false); // Close modal after creation
-      // Refresh the workspace list
-      const refreshedWorkspaces = await fetchWorkspaces();
-      setWorkspaces(refreshedWorkspaces || []);
+      setShowWorkspaceModal(false);
+      fetchWorkspaces(); // Refresh the workspaces list
     } catch (error) {
       console.error("Error creating workspace:", error);
       setNotification({ type: "error", message: "Workspace creation failed!" });
@@ -78,37 +87,20 @@ const Workspace = () => {
 
   const handleWorkspaceSelection = (workspace) => {
     setSelectedWorkspace(workspace);
-    // Fetch documents related to the selected workspace
-    fetchDocuments(workspace._id);
-  };
-
-  const fetchDocuments = async (workspaceId) => {
-    try {
-      const response = await axios.get(
-        `http://localhost:4000/api/documents/${workspaceId}/documents`
-      );
-      setDocuments(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      console.error("Error fetching documents:", error);
-      setDocuments([]); // Handle error by setting documents to an empty array
-    }
+    fetchDocuments(workspace._id); // Fetch documents for the selected workspace
   };
 
   const handleFileUpload = async (event) => {
     event.preventDefault();
     if (!selectedFile || !selectedWorkspace) return;
 
-    const formData = new FormData();
-    formData.append("document", selectedFile);
-    formData.append("workspaceId", selectedWorkspace._id);
-
     try {
-      await uploadDocument(formData);
+      await uploadDocument(selectedWorkspace._id, { file: selectedFile });
       setNotification({
         type: "success",
         message: "File uploaded successfully!",
       });
-      fetchDocuments(selectedWorkspace._id); // Refresh document list
+      fetchDocuments(selectedWorkspace._id); // Refresh documents list
     } catch (error) {
       console.error("Error uploading file:", error);
       setNotification({ type: "error", message: "File upload failed!" });
@@ -119,11 +111,17 @@ const Workspace = () => {
     setSearchTerm(event.target.value);
   };
 
-  const filteredDocuments = Array.isArray(documents)
-    ? documents.filter((document) =>
-        document.name.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : [];
+
+
+  const handlePreviewDocument = async (documentId) => {
+    try {
+      await previewDocument(documentId);
+      setShowPreviewModal(true);
+    } catch (error) {
+      console.error("Error previewing document:", error);
+      setNotification({ type: "error", message: "Document preview failed!" });
+    }
+  };
 
   return (
     <div className="workspace-container">
@@ -190,19 +188,23 @@ const Workspace = () => {
 
       {/* List of Workspaces */}
       <h3>Select a Workspace</h3>
-      <ul className="workspace-list">
-        {workspaces.map((workspace) => (
-          <li
-            key={workspace._id}
-            onClick={() => handleWorkspaceSelection(workspace)}
-            className={`workspace-item ${
-              selectedWorkspace?._id === workspace._id ? "selected" : ""
-            }`}
-          >
-            {workspace.name}
-          </li>
-        ))}
-      </ul>
+      {workspaces && workspaces.length > 0 ? (
+        <div className="workspace-list">
+          {workspaces.map((workspace) => (
+            <div
+              key={workspace._id}
+              onClick={() => handleWorkspaceSelection(workspace)}
+              className={`workspace-item ${
+                selectedWorkspace?._id === workspace._id ? "selected" : ""
+              }`}
+            >
+              {workspace.name}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p>No workspaces available.</p>
+      )}
 
       {/* Upload and document list only visible if a workspace is selected */}
       {selectedWorkspace && (
@@ -251,7 +253,7 @@ const Workspace = () => {
                   <td>
                     <Button
                       variant="info"
-                      onClick={() => previewDocument(document._id)}
+                      onClick={() => handlePreviewDocument(document._id)}
                       className="me-2"
                     >
                       <FontAwesomeIcon icon={faEye} /> Preview
@@ -277,6 +279,7 @@ const Workspace = () => {
             </tbody>
           </Table>
 
+          {/* Modal for document preview */}
           <Modal
             show={showPreviewModal}
             onHide={() => setShowPreviewModal(false)}

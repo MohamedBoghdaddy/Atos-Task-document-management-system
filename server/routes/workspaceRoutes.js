@@ -4,17 +4,18 @@ import {
   getWorkspaceById,
   updateWorkspace,
   deleteWorkspace,
+  getAllWorkspaces,
+  getWorkspacesByUser,
 } from "../controller/workspaceController.js";
 import { auth } from "../Middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.route("/").post(auth, createWorkspace); // This route is hit by "http://localhost:4000/api/workspaces"
-
-router
-  .route("/:id")
-  .get(auth, getWorkspaceById) // This route is hit by "http://localhost:4000/api/workspaces/:id"
-  .put(auth, updateWorkspace)
-  .delete(auth, deleteWorkspace);
+router.post("/createWorkspace", auth, createWorkspace);
+router.get("/getWorkspaceById", auth, getWorkspaceById);
+router.put("/updateWorkspace", auth, updateWorkspace);
+router.delete("/deleteWorkspace", auth, deleteWorkspace);
+router.get("/getAllWorkspaces", auth, getAllWorkspaces);
+router.get("/getWorkspacesByUser/:userId", auth, getWorkspacesByUser);
 
 export default router;
