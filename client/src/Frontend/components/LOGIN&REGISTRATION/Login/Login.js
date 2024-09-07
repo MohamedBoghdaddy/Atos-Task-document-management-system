@@ -1,9 +1,9 @@
 import React from "react";
 import "../../styles/login.css"; // Adjust the path as needed
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useLogin } from "../../../../hooks/useLogin";
 
-const Login = ({ onLoginSuccess }) => {
+const Login = () => {
   const {
     email,
     setEmail,
@@ -15,7 +15,7 @@ const Login = ({ onLoginSuccess }) => {
     successMessage,
     isLoading,
     handleLogin,
-  } = useLogin(onLoginSuccess);
+  } = useLogin();
 
   return (
     <div className="main-container">
@@ -60,6 +60,7 @@ const Login = ({ onLoginSuccess }) => {
             {successMessage && <div className="success">{successMessage}</div>}
             <button className="left_btn" type="submit" disabled={isLoading}>
               {isLoading ? "Logging in..." : "Login"}
+              
             </button>
           </form>
         </div>

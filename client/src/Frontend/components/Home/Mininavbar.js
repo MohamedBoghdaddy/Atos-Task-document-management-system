@@ -52,15 +52,14 @@ const NavBar = () => {
         />
         <Navbar.Collapse id="navbarScroll" className="navbar-collapse">
           <Nav className="navbar-nav ms-auto" navbarScroll>
-            <ScrollLink
+            <Link
               to="/"
               smooth
               className="nav-link"
               onClick={handleNavCollapse}
             >
               HOME
-            </ScrollLink>
-         
+            </Link>
 
             <ScrollLink
               to="/contact"
@@ -69,7 +68,6 @@ const NavBar = () => {
             >
               Contact Us
             </ScrollLink>
-      
 
             {isAuthenticated && user ? (
               <div

@@ -30,7 +30,7 @@ export const upload = multer({ storage: storage });
 
 // Function to create a JWT token
 const createToken = (user) =>
-  jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: "1h" });
+  jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: "30d" });
 
 // User registration
 export const register = async (req, res) => {
@@ -47,9 +47,7 @@ export const register = async (req, res) => {
 
   try {
     // Check if the user already exists
-    const existingUser = await User.findOne({
-      where: { email },
-    });
+    const existingUser = await User.findOne({ email });
 
     if (existingUser) {
       return res
@@ -61,7 +59,7 @@ export const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create the user
-    const user = await User.create({
+    const user = new User({
       username,
       email,
       password: hashedPassword,
@@ -72,6 +70,8 @@ export const register = async (req, res) => {
       gender,
     });
 
+    await user.save();
+
     // Generate JWT token
     const token = createToken(user);
 
@@ -79,10 +79,10 @@ export const register = async (req, res) => {
     res.status(201).json({
       token,
       user: {
-        id: user.id,
+        id: user._id,
         username: user.username,
         email: user.email,
-        role: user.role, // Assuming you have a role field in your User model
+        role: user.role,
         gender: user.gender,
         nid: user.nid,
         firstName: user.firstName,
@@ -104,7 +104,7 @@ export const login = async (req, res) => {
 
   try {
     console.log(`Attempting login for email: ${email}`);
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({ email });
     if (!user) {
       console.log(`No user found with email: ${email}`);
       return res.status(401).json({ message: "Invalid credentials" });
@@ -128,46 +128,19 @@ export const login = async (req, res) => {
       token,
       user: { username: user.username, email, role: user.role },
     });
-    console.log(`Login successful for user: ${username}`);
+    console.log(`Login successful for user: ${user.username}`);
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ message: "Login failed", error });
   }
 };
 
-
-// Middleware for protecting routes
-export const auth = async (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1] || req.cookies.token;
-  if (!token) return res.status(401).json({ message: "Unauthorized" });
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = await User.findByPk(decoded.id, {
-      attributes: { exclude: ["password"] },
-    });
-    if (!req.user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    next();
-  } catch (error) {
-    res.status(401).json({ message: "Invalid token" });
-  }
-};
-
-// Middleware for role-based access
-export const authorize =
-  (...roles) =>
-  (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ message: "Forbidden" });
-    }
-    next();
-  };
-
 // User logout
 export const logoutUser = async (req, res) => {
   res.clearCookie("token");
+  localStorage.removeItem("user");
+  localStorage.removeItem("token");
+
   res.status(200).json({ message: "Logout successful" });
 };
 
@@ -175,9 +148,7 @@ export const logoutUser = async (req, res) => {
 export const getUser = async (req, res) => {
   try {
     const { userId } = req.params;
-    const user = await User.findByPk(userId, {
-      attributes: { exclude: ["password"] },
-    });
+    const user = await User.findById(userId).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
 
     res.status(200).json(user);
@@ -201,11 +172,9 @@ export const updateUser = async (req, res) => {
       }
     }
 
-    const updatedUser = await User.update(updates, {
-      where: { id: userId },
-      returning: true,
-      individualHooks: true,
-    });
+    const updatedUser = await User.findByIdAndUpdate(userId, updates, {
+      new: true,
+    }).select("-password");
 
     if (!updatedUser) {
       return res.status(404).json({ message: "User not found" });
@@ -225,10 +194,10 @@ export const deleteUser = async (req, res) => {
   const { userId } = req.params;
 
   try {
-    const user = await User.findByPk(userId);
+    const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    await user.destroy();
+    await user.remove();
     res.status(200).json({ message: "User profile deleted successfully" });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -242,9 +211,7 @@ export const checkAuth = async (req, res) => {
     if (!token) return res.status(401).json({ message: "Not authenticated" });
 
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findByPk(decoded.id, {
-      attributes: { exclude: ["password"] },
-    });
+    const user = await User.findById(decoded.id).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
 
     res.status(200).json({ user });
