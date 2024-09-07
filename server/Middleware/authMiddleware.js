@@ -26,8 +26,11 @@ export const auth = async (req, res, next) => {
     // Verify the token
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    // Get user from the token and attach to req object, excluding the password
-    req.user = await User.findById(decoded._id).select("-password");
+    // console.log(decoded)
+
+    // Get user from the token and attach to req object
+    req.user = await User.findById(decoded.id).select("-password");
+
 
     if (!req.user) {
       return res.status(404).json({ message: "User not found" });

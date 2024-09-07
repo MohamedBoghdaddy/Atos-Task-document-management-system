@@ -6,7 +6,7 @@ import { setCookie } from "../utils/cookieUtils";
 const apiUrl = process.env.REACT_APP_API_URL;
 const localUrl = "http://localhost:4000";
 
-export const useLogin = (onLoginSuccess) => {
+export const useLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -42,8 +42,6 @@ export const useLogin = (onLoginSuccess) => {
         // Set success message
         setSuccessMessage("Login successful");
 
-        // Callback function after successful login
-        onLoginSuccess();
 
         // Set cookies
         setCookie("token", token);

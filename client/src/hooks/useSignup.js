@@ -47,12 +47,11 @@ export const useSignup = () => {
         { withCredentials: true }
       );
 
-      const { token, user } = response.data;
+      const { user } = response.data; // Destructure user from response
 
-      localStorage.setItem("user", JSON.stringify({ token, user }));
+      dispatch({ type: "REGISTRATION_SUCCESS", payload: user });
 
       setSuccessMessage("Registration successful");
-      dispatch({ type: "REGISTRATION_SUCCESS", payload: user });
     } catch (error) {
       console.error("Signup error:", error);
       setErrorMessage(error.response?.data?.message || "Signup failed");

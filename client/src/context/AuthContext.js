@@ -4,6 +4,7 @@ import React, {
   useEffect,
   useCallback,
   useContext,
+  useMemo,
 } from "react";
 import axios from "axios";
 
@@ -38,6 +39,7 @@ const authReducer = (state, action) => {
       return state;
   }
 };
+
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
@@ -89,16 +91,18 @@ export const AuthProvider = ({ children }) => {
       checkAuth();
     }
   }, [checkAuth]);
+
+  // Memoize the context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({ state, dispatch }), [state]);
+
   return (
-    <AuthContext.Provider value={{ state, dispatch }}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 };
 
 export const useAuthContext = () => {
   const context = useContext(AuthContext);
-  console.log("AuthContext:", context); // Add this line
+  console.log("AuthContext:", context);
   if (context === undefined) {
     throw new Error("useAuthContext must be used within an AuthProvider");
   }

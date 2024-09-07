@@ -1,15 +1,6 @@
-import React, { createContext, useState, useEffect } from "react";
+import React, { createContext, useState, useEffect, useMemo } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
-import { Button, Form, Table, Modal } from "react-bootstrap";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faUpload,
-  faSearch,
-  faTrash,
-  faEye,
-  faDownload,
-} from "@fortawesome/free-solid-svg-icons";
 import { useAuthContext } from "../context/AuthContext";
 
 export const DashboardContext = createContext();
@@ -20,16 +11,17 @@ const DashboardProvider = ({ children }) => {
 
   const [loading, setLoading] = useState(true);
   const [workspaces, setWorkspaces] = useState([]);
-  const [documents, setDocuments] = useState([]);
+  const [documents, setDocuments] = useState([]); // Initialize as an empty array
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewFile, setPreviewFile] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
+  // Create workspace
   const createWorkspace = async (workspaceData) => {
     try {
       const response = await axios.post(
-        "http://localhost:4000/api/workspaces", // Use the correct route here
+        "http://localhost:4000/api/workspaces/createWorkspace",
         workspaceData,
         { withCredentials: true }
       );
@@ -41,15 +33,18 @@ const DashboardProvider = ({ children }) => {
     }
   };
 
+  // Fetch all workspaces
   const fetchWorkspaces = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:4000/api/workspaces", // Use the correct route here
-        {
-          withCredentials: true,
-        }
+        "http://localhost:4000/api/workspaces/getAllWorkspaces",
+        { withCredentials: true }
       );
-      setWorkspaces(response.data);
+      if (Array.isArray(response.data)) {
+        setWorkspaces(response.data);
+      } else {
+        setWorkspaces([]);
+      }
     } catch (error) {
       console.error("Error fetching workspaces:", error);
       toast.error("Failed to fetch workspaces.");
@@ -58,13 +53,51 @@ const DashboardProvider = ({ children }) => {
     }
   };
 
+  const fetchWorkspacesByUserId = async (userId) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:4000/api/workspaces/getWorkspacesByUser/${userId}`,
+        { withCredentials: true }
+      );
+      if (Array.isArray(response.data)) {
+        setWorkspaces(response.data);
+      } else {
+        setWorkspaces([]);
+      }
+    } catch (error) {
+      console.error("Error fetching workspaces by user ID:", error);
+      toast.error("Failed to fetch workspaces.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch specific workspace by ID
+  const fetchWorkspaceById = async (workspaceId) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:4000/api/workspaces/getWorkspaceById/${workspaceId}`,
+        { withCredentials: true }
+      );
+      setWorkspaces([response.data]);
+    } catch (error) {
+      console.error("Error fetching workspace by ID:", error);
+      toast.error("Failed to fetch workspace by ID.");
+    }
+  };
+
+  // Fetch documents related to a workspace
   const fetchDocuments = async (workspaceId) => {
     try {
       const response = await axios.get(
-        `http://localhost:4000/api/workspaces/${workspaceId}/documents`, // Correct route
+        `http://localhost:4000/api/workspaces/${workspaceId}/documents`,
         { withCredentials: true }
       );
-      setDocuments(response.data);
+      if (Array.isArray(response.data)) {
+        setDocuments(response.data); // Ensure it's an array
+      } else {
+        setDocuments([]); // Handle non-array response gracefully
+      }
     } catch (error) {
       console.error("Error fetching documents:", error);
       toast.error("Failed to fetch documents.");
@@ -73,7 +106,7 @@ const DashboardProvider = ({ children }) => {
     }
   };
 
-
+  // Upload a document
   const uploadDocument = async (workspaceId, documentData) => {
     try {
       const formData = new FormData();
@@ -98,13 +131,12 @@ const DashboardProvider = ({ children }) => {
     }
   };
 
+  // Delete a document
   const deleteDocument = async (documentId) => {
     try {
       await axios.delete(
         `http://localhost:4000/api/deleteDocument/${documentId}`,
-        {
-          withCredentials: true,
-        }
+        { withCredentials: true }
       );
       setDocuments(documents.filter((document) => document._id !== documentId));
       toast.success("Document deleted successfully.");
@@ -114,6 +146,7 @@ const DashboardProvider = ({ children }) => {
     }
   };
 
+  // Preview a document
   const previewDocument = async (documentId) => {
     try {
       const response = await axios.get(
@@ -128,6 +161,7 @@ const DashboardProvider = ({ children }) => {
     }
   };
 
+  // Download a document
   const downloadDocument = async (documentId, filename) => {
     try {
       const response = await axios.get(
@@ -150,9 +184,11 @@ const DashboardProvider = ({ children }) => {
     setSearchTerm(term);
   };
 
-  const filteredDocuments = documents.filter((document) =>
-    document.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredDocuments = Array.isArray(documents)
+    ? documents.filter((document) =>
+        document.name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : [];
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -160,26 +196,30 @@ const DashboardProvider = ({ children }) => {
     }
   }, [isAuthenticated, user]);
 
+  const contextValue = useMemo(
+    () => ({
+      loading,
+      workspaces,
+      fetchWorkspaces,
+      createWorkspace,
+      fetchWorkspaceById,
+      documents: filteredDocuments,
+      fetchDocuments,
+      uploadDocument,
+      deleteDocument,
+      previewDocument,
+      downloadDocument,
+      setSelectedFile,
+      searchDocuments,
+      previewFile,
+      showPreviewModal,
+      setShowPreviewModal,
+    }),
+    [loading, workspaces, filteredDocuments, previewFile, showPreviewModal]
+  );
+
   return (
-    <DashboardContext.Provider
-      value={{
-        loading,
-        workspaces,
-        fetchWorkspaces,
-        createWorkspace,
-        documents: filteredDocuments,
-        fetchDocuments,
-        uploadDocument,
-        deleteDocument,
-        previewDocument,
-        downloadDocument,
-        setSelectedFile,
-        searchDocuments,
-        previewFile,
-        showPreviewModal,
-        setShowPreviewModal,
-      }}
-    >
+    <DashboardContext.Provider value={contextValue}>
       {children}
     </DashboardContext.Provider>
   );
