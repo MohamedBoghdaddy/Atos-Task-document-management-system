@@ -96,17 +96,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-app.get("/api/users/me", verifyToken, async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id).select("-password");
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    res.json({ user });
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching user details" });
-  }
-});
+
 
 app.use("/api/users", userRoutes);
 app.use("/api/workspaces", workspaceRoutes);
@@ -117,12 +107,6 @@ app.use((err, req, res, next) => {
   res.status(500).send("Something went wrong!");
 });
 
-app.post("/api/documents/upload", upload.single("document"), (req, res) => {
-  if (!req.file) {
-    return res.status(400).send("No file uploaded.");
-  }
-  res.status(200).send({ message: "File uploaded successfully!" });
-});
 
 // Serve the client app
 app.use(express.static(path.join(__dirname, "../client/build")));

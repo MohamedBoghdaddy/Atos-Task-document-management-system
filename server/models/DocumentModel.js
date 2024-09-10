@@ -6,18 +6,29 @@ const documentSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  content: {
+  type: {
     type: String,
     required: true,
   },
-  type: { type: String, required: true },
-  url: { type: String, required: true },
+  url: {
+    type: String,
+    required: true,
+  },
+  owner: {
+    // Ensure the owner field exists and references the User model
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
   workspace: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Workspace",
     required: true,
   },
-  deleted: { type: Boolean, default: false }, // Soft deletion flag
+  deleted: {
+    type: Boolean,
+    default: false,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
