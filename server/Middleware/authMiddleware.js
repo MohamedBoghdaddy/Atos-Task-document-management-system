@@ -6,9 +6,8 @@ const JWT_SECRET = process.env.JWT_SECRET;
 export const auth = async (req, res, next) => {
   let token;
 
-  if (req.cookies.token) {
-    token = req.cookies.token;
-  } else if (
+  // Retrieve token from the Authorization header
+  if (
     req.headers.authorization &&
     req.headers.authorization.startsWith("Bearer")
   ) {
@@ -17,28 +16,25 @@ export const auth = async (req, res, next) => {
 
   // If no token is found, return an error
   if (!token) {
-    return res
-      .status(401)
-      .json({ message: "Authorization denied, no token provided" });
+    return res.status(401).json({
+      message: "Authorization denied, no token provided",
+    });
   }
 
   try {
     // Verify the token
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    // console.log(decoded)
-
     // Get user from the token and attach to req object
     req.user = await User.findById(decoded.id).select("-password");
-
 
     if (!req.user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    next();
+    next(); // Proceed to the next middleware or route
   } catch (error) {
-    console.error("Token verification failed:", error);
+    console.error("Token verification failed:", error.message);
     res
       .status(401)
       .json({ message: "Unauthorized, token verification failed" });
