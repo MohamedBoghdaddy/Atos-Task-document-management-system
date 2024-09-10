@@ -7,19 +7,21 @@ import {
   faTrash,
   faEye,
   faDownload,
+  faTimesCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import Notification from "../Dashboard/Notification";
 import "../styles/Workspace.css";
 import { DashboardContext } from "../../../context/DashboardContext";
-import { useAuthContext } from "../../../context/AuthContext"; // Import AuthContext to access the logged-in user
+import { useAuthContext } from "../../../context/AuthContext";
 
 const Workspace = () => {
-  const { user } = useAuthContext(); // Get the logged-in user from AuthContext
+  const { user } = useAuthContext();
 
   const {
     fetchWorkspaces,
     fetchWorkspacesByUserId,
     createWorkspace,
+    deleteWorkspace,
     fetchDocuments,
     uploadDocument,
     deleteDocument,
@@ -49,7 +51,6 @@ const Workspace = () => {
     }
   }, [fetchWorkspaces, user, fetchWorkspacesByUserId]);
 
-
   useEffect(() => {
     if (searchTerm.length >= 3) {
       const filtered = documents.filter((doc) =>
@@ -60,8 +61,6 @@ const Workspace = () => {
       setFilteredDocuments(documents);
     }
   }, [searchTerm, documents]);
-
-
 
   const handleWorkspaceCreation = async (event) => {
     event.preventDefault();
@@ -78,7 +77,7 @@ const Workspace = () => {
         message: "Workspace created successfully!",
       });
       setShowWorkspaceModal(false);
-      fetchWorkspaces(); // Refresh the workspaces list
+      fetchWorkspaces();
     } catch (error) {
       console.error("Error creating workspace:", error);
       setNotification({ type: "error", message: "Workspace creation failed!" });
@@ -87,7 +86,7 @@ const Workspace = () => {
 
   const handleWorkspaceSelection = (workspace) => {
     setSelectedWorkspace(workspace);
-    fetchDocuments(workspace._id); // Fetch documents for the selected workspace
+    fetchDocuments(workspace._id);
   };
 
   const handleFileUpload = async (event) => {
@@ -100,7 +99,7 @@ const Workspace = () => {
         type: "success",
         message: "File uploaded successfully!",
       });
-      fetchDocuments(selectedWorkspace._id); // Refresh documents list
+      fetchDocuments(selectedWorkspace._id);
     } catch (error) {
       console.error("Error uploading file:", error);
       setNotification({ type: "error", message: "File upload failed!" });
@@ -110,8 +109,6 @@ const Workspace = () => {
   const handleSearch = (event) => {
     setSearchTerm(event.target.value);
   };
-
-
 
   const handlePreviewDocument = async (documentId) => {
     try {
@@ -123,6 +120,23 @@ const Workspace = () => {
     }
   };
 
+  const handleDeleteWorkspace = async (workspaceId) => {
+    try {
+      await deleteWorkspace(workspaceId);
+      setNotification({
+        type: "success",
+        message: "Workspace deleted successfully!",
+      });
+      fetchWorkspaces();
+    } catch (error) {
+      console.error("Error deleting workspace:", error);
+      setNotification({
+        type: "error",
+        message: "Failed to delete workspace.",
+      });
+    }
+  };
+
   return (
     <div className="workspace-container">
       <h2>Workspace</h2>
@@ -131,7 +145,6 @@ const Workspace = () => {
         <Notification type={notification.type} message={notification.message} />
       )}
 
-      {/* Button to show workspace creation form */}
       <Button
         variant="primary"
         onClick={() => setShowWorkspaceModal(true)}
@@ -140,7 +153,6 @@ const Workspace = () => {
         Create Workspace
       </Button>
 
-      {/* Modal for creating a workspace */}
       <Modal
         show={showWorkspaceModal}
         onHide={() => setShowWorkspaceModal(false)}
@@ -186,7 +198,6 @@ const Workspace = () => {
         </Modal.Body>
       </Modal>
 
-      {/* List of Workspaces */}
       <h3>Select a Workspace</h3>
       {workspaces && workspaces.length > 0 ? (
         <div className="workspace-list">
@@ -199,6 +210,13 @@ const Workspace = () => {
               }`}
             >
               {workspace.name}
+              <Button
+                variant="danger"
+                className="ms-3"
+                onClick={() => handleDeleteWorkspace(workspace._id)}
+              >
+                <FontAwesomeIcon icon={faTimesCircle} /> Delete
+              </Button>
             </div>
           ))}
         </div>
@@ -206,7 +224,6 @@ const Workspace = () => {
         <p>No workspaces available.</p>
       )}
 
-      {/* Upload and document list only visible if a workspace is selected */}
       {selectedWorkspace && (
         <>
           <h4>Documents in Workspace: {selectedWorkspace.name}</h4>
@@ -249,7 +266,20 @@ const Workspace = () => {
             <tbody>
               {filteredDocuments.map((document) => (
                 <tr key={document._id}>
-                  <td>{document.name}</td>
+                  <td>
+                    <div className="document-preview-container">
+                      {document.name}
+                      {/* Update this section to show the document preview on hover */}
+                      <div className="document-preview">
+                        <iframe
+                          src={`data:application/pdf;base64,${document.previewFile}`}
+                          title="Document Preview"
+                          width="100%"
+                          height="100%"
+                        />
+                      </div>
+                    </div>
+                  </td>
                   <td>
                     <Button
                       variant="info"
@@ -279,7 +309,6 @@ const Workspace = () => {
             </tbody>
           </Table>
 
-          {/* Modal for document preview */}
           <Modal
             show={showPreviewModal}
             onHide={() => setShowPreviewModal(false)}
