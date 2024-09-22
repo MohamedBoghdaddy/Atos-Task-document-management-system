@@ -18,15 +18,10 @@ const DashboardProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [workspaces, setWorkspaces] = useState([]);
   const [documents, setDocuments] = useState([]);
+  const [recycleBin, setRecycleBin] = useState([]); // Add recycle bin state
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedFile, setSelectedFile] = useState(null); // Declare selectedFile
   const [previewFile, setPreviewFile] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
-
-  // Handle file selection for uploading a document
-  const handleFileChange = (event) => {
-    setSelectedFile(event.target.files[0]); // Set selectedFile when a file is selected
-  };
 
   // Create workspace
   const createWorkspace = useCallback(
@@ -54,11 +49,7 @@ const DashboardProvider = ({ children }) => {
         "http://localhost:4000/api/workspaces/getAllWorkspaces",
         { withCredentials: true }
       );
-      if (Array.isArray(response.data)) {
-        setWorkspaces(response.data);
-      } else {
-        setWorkspaces([]);
-      }
+      setWorkspaces(response.data || []);
     } catch (error) {
       console.error("Error fetching workspaces:", error);
       toast.error("Failed to fetch workspaces.");
@@ -67,62 +58,6 @@ const DashboardProvider = ({ children }) => {
     }
   }, []);
 
-  // Fetch workspaces by user ID
-  const fetchWorkspacesByUserId = useCallback(async (userId) => {
-    try {
-      const response = await axios.get(
-        `http://localhost:4000/api/workspaces/getWorkspacesByUser/${userId}`,
-        { withCredentials: true }
-      );
-      if (Array.isArray(response.data)) {
-        setWorkspaces(response.data);
-      } else {
-        setWorkspaces([]);
-      }
-    } catch (error) {
-      console.error("Error fetching workspaces by user ID:", error);
-      toast.error("Failed to fetch workspaces.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Fetch specific workspace by ID
-  const fetchWorkspaceById = useCallback(async (workspaceId) => {
-    try {
-      const response = await axios.get(
-        `http://localhost:4000/api/workspaces/getWorkspaceById/${workspaceId}`,
-        { withCredentials: true }
-      );
-      setWorkspaces([response.data]);
-    } catch (error) {
-      console.error("Error fetching workspace by ID:", error);
-      toast.error("Failed to fetch workspace by ID.");
-    }
-  }, []);
-
-  // Delete a workspace
-  const deleteWorkspace = useCallback(
-    async (workspaceId) => {
-      try {
-        await axios.delete(
-          `http://localhost:4000/api/workspaces/${workspaceId}/deleteWorkspace`,
-          {
-            withCredentials: true,
-          }
-        );
-        setWorkspaces(
-          workspaces.filter((workspace) => workspace._id !== workspaceId)
-        );
-        toast.success("Workspace deleted successfully.");
-      } catch (error) {
-        console.error("Error deleting workspace:", error);
-        toast.error("Failed to delete workspace.");
-      }
-    },
-    [workspaces]
-  );
-
   // Fetch documents related to a workspace
   const fetchDocuments = useCallback(async (workspaceId) => {
     try {
@@ -130,11 +65,12 @@ const DashboardProvider = ({ children }) => {
         `http://localhost:4000/api/documents/${workspaceId}/documents`,
         { withCredentials: true }
       );
-      if (Array.isArray(response.data)) {
-        setDocuments(response.data);
-      } else {
-        setDocuments([]);
-      }
+      const allDocuments = response.data || [];
+      const activeDocuments = allDocuments.filter((doc) => !doc.deleted);
+      const deletedDocuments = allDocuments.filter((doc) => doc.deleted);
+
+      setDocuments(activeDocuments);
+      setRecycleBin(deletedDocuments); // Update recycle bin with deleted documents
     } catch (error) {
       console.error("Error fetching documents:", error);
       toast.error("Failed to fetch documents.");
@@ -145,14 +81,10 @@ const DashboardProvider = ({ children }) => {
 
   // Upload a document
   const uploadDocument = useCallback(
-    async (workspaceId) => {
+    async (workspaceId, documentData) => {
       try {
-        if (!selectedFile) {
-          toast.error("Please select a file to upload.");
-          return;
-        }
         const formData = new FormData();
-        formData.append("document", selectedFile);
+        formData.append("document", documentData.file);
         formData.append("workspaceId", workspaceId);
 
         const response = await axios.post(
@@ -172,29 +104,77 @@ const DashboardProvider = ({ children }) => {
         toast.error("Failed to upload document.");
       }
     },
-    [documents, selectedFile] // Include selectedFile as a dependency
+    [documents]
   );
 
-  // Delete a document
+  // Soft delete a document (move to recycle bin)
   const deleteDocument = useCallback(
     async (documentId) => {
       try {
+        const response = await axios.put(
+          `http://localhost:4000/api/documents/${documentId}/soft-delete`, // API to soft delete
+          { deleted: true },
+          { withCredentials: true }
+        );
+        const updatedDocument = response.data;
+
+        // Move the document to the recycle bin
+        setDocuments(documents.filter((doc) => doc._id !== documentId));
+        setRecycleBin([...recycleBin, updatedDocument]);
+
+        toast.success("Document moved to recycle bin.");
+      } catch (error) {
+        console.error("Error moving document to recycle bin:", error);
+        toast.error("Failed to move document to recycle bin.");
+      }
+    },
+    [documents, recycleBin]
+  );
+
+  // Restore a document from the recycle bin
+  const restoreDocument = useCallback(
+    async (documentId) => {
+      try {
+        const response = await axios.put(
+          `http://localhost:4000/api/documents/${documentId}/restore`, 
+          { deleted: false },
+          { withCredentials: true }
+        );
+        const restoredDocument = response.data;
+
+        // Move the document back to active documents
+        setRecycleBin(recycleBin.filter((doc) => doc._id !== documentId));
+        setDocuments([...documents, restoredDocument]);
+
+        toast.success("Document restored successfully.");
+      } catch (error) {
+        console.error("Error restoring document:", error);
+        toast.error("Failed to restore document.");
+      }
+    },
+    [documents, recycleBin]
+  );
+
+  // Delete a workspace
+  const deleteWorkspace = useCallback(
+    async (workspaceId) => {
+      try {
         await axios.delete(
-          `http://localhost:4000/api/documents/${documentId}`,
+          `http://localhost:4000/api/workspaces/deleteWorkspace/${workspaceId}`,
           {
             withCredentials: true,
           }
         );
-        setDocuments(
-          documents.filter((document) => document._id !== documentId)
+        setWorkspaces(
+          workspaces.filter((workspace) => workspace._id !== workspaceId)
         );
-        toast.success("Document deleted successfully.");
+        toast.success("Workspace deleted successfully.");
       } catch (error) {
-        console.error("Error deleting document:", error);
-        toast.error("Failed to delete document.");
+        console.error("Error deleting workspace:", error);
+        toast.error("Failed to delete workspace.");
       }
     },
-    [documents]
+    [workspaces]
   );
 
   // Preview a document
@@ -204,8 +184,7 @@ const DashboardProvider = ({ children }) => {
         `http://localhost:4000/api/documents/preview/${documentId}`,
         { withCredentials: true }
       );
-      setPreviewFile(response.data.base64);
-      setShowPreviewModal(true);
+      return response.data;
     } catch (error) {
       console.error("Error previewing document:", error);
       toast.error("Failed to preview document.");
@@ -243,49 +222,48 @@ const DashboardProvider = ({ children }) => {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      fetchWorkspacesByUserId(user._id); // Use fetchWorkspacesByUserId here
+      fetchWorkspaces();
     }
-  }, [isAuthenticated, user, fetchWorkspacesByUserId]);
+  }, [isAuthenticated, user, fetchWorkspaces]);
 
   const contextValue = useMemo(
     () => ({
       loading,
       workspaces,
       fetchWorkspaces,
-      fetchWorkspacesByUserId, // Add fetchWorkspacesByUserId to context
       createWorkspace,
-      fetchWorkspaceById,
-      deleteWorkspace,
+      deleteWorkspace, 
       documents: filteredDocuments,
+      recycleBin, 
       fetchDocuments,
-      uploadDocument,
+      uploadDocument, // Expose uploadDocument
       deleteDocument,
+      restoreDocument, // Expose restoreDocument in the context
       previewDocument,
       downloadDocument,
-      setSelectedFile,
       searchDocuments,
-      handleFileChange, // Expose handleFileChange for file uploads
       previewFile,
       showPreviewModal,
       setShowPreviewModal,
+      setPreviewFile,
     }),
     [
       loading,
       workspaces,
       filteredDocuments,
+      recycleBin, // Add recycleBin to memoized dependencies
       previewFile,
       showPreviewModal,
       createWorkspace,
+      deleteWorkspace, // Add deleteWorkspace to memoized dependencies
+      uploadDocument, // Add uploadDocument to memoized dependencies
       deleteDocument,
-      uploadDocument,
-      deleteWorkspace,
+      restoreDocument, // Add restoreDocument to memoized dependencies
       fetchWorkspaces,
-      fetchWorkspaceById,
       fetchDocuments,
       previewDocument,
       downloadDocument,
       searchDocuments,
-      fetchWorkspacesByUserId,
     ]
   );
 

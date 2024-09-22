@@ -1,7 +1,6 @@
-import { useState } from "react";
-import { useAuthContext } from "../context/AuthContext";
+import { useState, useCallback } from "react";
 import axios from "axios";
-import { setCookie } from "../utils/cookieUtils";
+import { useAuthContext } from "../context/AuthContext";
 
 const apiUrl = process.env.REACT_APP_API_URL;
 const localUrl = "http://localhost:4000";
@@ -15,50 +14,51 @@ export const useLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { dispatch } = useAuthContext();
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setErrorMessage("");
-    setSuccessMessage("");
+  const handleLogin = useCallback(
+    async (e) => {
+      e.preventDefault();
+      setIsLoading(true);
+      setErrorMessage("");
+      setSuccessMessage("");
 
-    try {
-      const response = await axios.post(
-        `${
-          process.env.NODE_ENV === "production" ? apiUrl : localUrl
-        }/api/users/login`,
-        { email, password },
-        { withCredentials: true }
-      );
+      try {
+        const response = await axios.post(
+          `${
+            process.env.NODE_ENV === "production" ? apiUrl : localUrl
+          }/api/users/login`,
+          { email, password },
+          { withCredentials: true }
+        );
 
-      const { token, user } = response.data;
+        const { token, user } = response.data;
 
-      if (token && user) {
-        // Store user and token in local storage
-        localStorage.setItem("user", JSON.stringify({ token, user }));
+        if (token && user) {
+          // Store token and user in local storage
+          localStorage.setItem("token", token);
+          localStorage.setItem("user", JSON.stringify({ token, user }));
 
-        // Dispatch login success action
-        dispatch({ type: "LOGIN_SUCCESS", payload: user || {} });
+          // Set Authorization header
+          axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-        // Set success message
-        setSuccessMessage("Login successful");
+          // Dispatch login success
+          dispatch({ type: "LOGIN_SUCCESS", payload: user });
 
-
-        // Set cookies
-        setCookie("token", token);
-        setCookie("username", user.username);
-        setCookie("email", user.email);
-        setCookie("userId", user._id);
-      } else {
-        console.error("Unexpected response format:", response.data);
-        throw new Error("Invalid response data");
+          // Set success message
+          setSuccessMessage("Login successful");
+        } else {
+          console.error("Unexpected response format:", response.data);
+          throw new Error("Invalid response data");
+        }
+      } catch (error) {
+        console.error("Login error:", error);
+        setErrorMessage(error.response?.data?.message || "Login failed");
+        dispatch({ type: "AUTH_ERROR" });
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Login error:", error);
-      setErrorMessage(error.response?.data?.message || "Login failed");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    [email, password, dispatch]
+  );
 
   return {
     email,

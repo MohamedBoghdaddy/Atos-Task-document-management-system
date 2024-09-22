@@ -168,6 +168,84 @@ body {
   color: #323c43;
 }
 
+.modal-body {
+  width: 100%; /* Make it full width */
+  max-width: 800px; /* Adjust this value to control the width */
+  margin: auto;
+  padding: 20px;
+}
+
+.main-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1000px; /* Adjust width for a wider appearance */
+  background-color: #fff;
+  padding: 30px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.left-login, .right-login {
+  flex: 1;
+  padding: 20px;
+}
+
+.left-login {
+  margin-right: 20px;
+}
+
+.right-login {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.field {
+  margin-bottom: 15px;
+}
+
+.left_btn, .right_btn {
+  width: 100%;
+  padding: 10px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.left_btn:hover, .right_btn:hover {
+  background-color: #0056b3;
+}
+
+.password-container {
+  position: relative;
+}
+
+.show-password {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.show-password i {
+  font-size: 16px;
+}
+
+
+
 @media only screen and (max-width: 760px) {
   .login-container,
   .signup-container {

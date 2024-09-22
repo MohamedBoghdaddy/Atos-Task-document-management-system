@@ -13,29 +13,28 @@ function Footer() {
     <section className="footer">
       <div className="footer-container">
         <div className="footer-col">
-          <h4>DMS</h4>
+          <h4>DMS - Document Management System</h4>
           <p>
-            Discover elegance and comfort with Hedj, your trusted partner in
-            premium furniture. We offer a diverse range of high-quality pieces
-            designed to elevate your home. From timeless classics to modern
-            trends, we have something for every taste. Explore our collection
-            today and transform your space.
+            Manage and organize your critical documents with ease. Our DMS
+            offers secure, fast, and reliable solutions to store, access, and
+            share your documents. From secure storage to seamless collaboration,
+            we provide everything you need to stay organized and efficient.
           </p>
           <div className="icons">
-            <a href="https://www.facebook.com/hedj.eg">
+            <a href="https://www.facebook.com/yourcompany">
               <FontAwesomeIcon icon={faFacebookF} />
             </a>{" "}
-            <a href="https://www.instagram.com/hedj.eg/">
+            <a href="https://www.instagram.com/yourcompany">
               <FontAwesomeIcon icon={faInstagram} />
             </a>
-            <a href="https://www.linkedin.com/company/hedj/">
+            <a href="https://www.linkedin.com/company/yourcompany">
               <FontAwesomeIcon icon={faLinkedin} />
             </a>
           </div>
         </div>
 
         <div className="footer-col">
-          <h4>Subscribe to our Newsletter</h4>
+          <h4>Subscribe to Our Updates</h4>
           <form className="newsletter-form">
             <input type="email" placeholder="Enter your email" />
             <button type="submit">Subscribe</button>

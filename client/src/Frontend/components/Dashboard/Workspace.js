@@ -8,6 +8,7 @@ import {
   faEye,
   faDownload,
   faTimesCircle,
+  faRecycle,
 } from "@fortawesome/free-solid-svg-icons";
 import Notification from "../Dashboard/Notification";
 import "../styles/Workspace.css";
@@ -29,14 +30,13 @@ const Workspace = () => {
     downloadDocument,
     workspaces,
     documents,
-    previewFile,
     showPreviewModal,
     setShowPreviewModal,
   } = useContext(DashboardContext);
 
   const [selectedWorkspace, setSelectedWorkspace] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null); // Handle selected file
   const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
   const [workspaceName, setWorkspaceName] = useState("");
   const [workspaceDescription, setWorkspaceDescription] = useState("");
@@ -44,6 +44,15 @@ const Workspace = () => {
   const [notification, setNotification] = useState(null);
   const [filteredDocuments, setFilteredDocuments] = useState([]);
 
+  // Recycle bin state
+  const [recycleBin, setRecycleBin] = useState([]);
+
+  // State for preview file and type
+  const [previewFileType, setPreviewFileType] = useState(""); // Track file type
+  const [previewFile, setPreviewFile] = useState(""); // Track the file content
+  const [mimeType, setMimeType] = useState(""); // Track MIME type for document preview
+  const [downloadFileName, setDownloadFileName] = useState("");
+  // Fetch workspaces for the logged-in user
   useEffect(() => {
     fetchWorkspaces();
     if (user && user._id) {
@@ -91,15 +100,19 @@ const Workspace = () => {
 
   const handleFileUpload = async (event) => {
     event.preventDefault();
-    if (!selectedFile || !selectedWorkspace) return;
+    if (!selectedFile || !selectedWorkspace) {
+      setNotification({ type: "error", message: "No file selected!" });
+      return;
+    }
 
     try {
+      // Pass the selected file to the uploadDocument function
       await uploadDocument(selectedWorkspace._id, { file: selectedFile });
       setNotification({
         type: "success",
         message: "File uploaded successfully!",
       });
-      fetchDocuments(selectedWorkspace._id);
+      fetchDocuments(selectedWorkspace._id); // Refresh documents list after upload
     } catch (error) {
       console.error("Error uploading file:", error);
       setNotification({ type: "error", message: "File upload failed!" });
@@ -112,7 +125,34 @@ const Workspace = () => {
 
   const handlePreviewDocument = async (documentId) => {
     try {
-      await previewDocument(documentId);
+      const response = await previewDocument(documentId);
+
+      // Ensure the response contains previewFile and mimeType
+      if (!response || !response.base64 || !response.fileType) {
+        throw new Error("Invalid document preview data");
+      }
+
+      // Set the preview file and type in state
+      if (response.fileType.includes("pdf")) {
+        setPreviewFileType("pdf");
+      } else if (["image/jpg", "image/jpeg", "image/png"].includes(mimeType)) {
+        setPreviewFileType(response.fileType);
+      } else if (
+        response.fileType ===
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      ) {
+        setPreviewFileType("docx");
+        setPreviewFile(response.html); // Store the HTML for rendering
+      } else if (response.fileType.includes("text")) {
+        setPreviewFileType(response.fileType);
+        setPreviewFile(response.base64);
+        setDownloadFileName(response.fileName); // Set the file name dynamically
+      } else {
+        setPreviewFileType("unsupported");
+      }
+      console.log(previewFile);
+      setPreviewFile(response.base64); // Store the base64-encoded file for rendering
+      setMimeType(response.fileType); // Store the MIME type
       setShowPreviewModal(true);
     } catch (error) {
       console.error("Error previewing document:", error);
@@ -120,6 +160,55 @@ const Workspace = () => {
     }
   };
 
+  // Move document to recycle bin instead of deleting
+  const handleRecycleDocument = async (documentId) => {
+    try {
+      const documentToRecycle = documents.find((doc) => doc._id === documentId);
+      setRecycleBin([...recycleBin, documentToRecycle]); // Move to recycle bin
+      setFilteredDocuments(
+        filteredDocuments.filter((doc) => doc._id !== documentId)
+      ); // Remove from main list
+      setNotification({
+        type: "success",
+        message: "Document moved to recycle bin!",
+      });
+    } catch (error) {
+      console.error("Error recycling document:", error);
+      setNotification({
+        type: "error",
+        message: "Failed to move document to recycle bin.",
+      });
+    }
+  };
+
+  // Restore a document from the recycle bin
+  const handleRestoreDocument = (documentId) => {
+    const documentToRestore = recycleBin.find((doc) => doc._id === documentId);
+    setFilteredDocuments([...filteredDocuments, documentToRestore]); // Move back to main list
+    setRecycleBin(recycleBin.filter((doc) => doc._id !== documentId)); // Remove from recycle bin
+    setNotification({
+      type: "success",
+      message: "Document restored successfully!",
+    });
+  };
+
+  // Permanently delete a document from the recycle bin
+  const handlePermanentDelete = async (documentId) => {
+    try {
+      await deleteDocument(documentId);
+      setRecycleBin(recycleBin.filter((doc) => doc._id !== documentId)); // Remove from recycle bin
+      setNotification({
+        type: "success",
+        message: "Document deleted!",
+      });
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      setNotification({
+        type: "error",
+        message: "Failed to delete document.",
+      });
+    }
+  };
   const handleDeleteWorkspace = async (workspaceId) => {
     try {
       await deleteWorkspace(workspaceId);
@@ -212,10 +301,10 @@ const Workspace = () => {
               {workspace.name}
               <Button
                 variant="danger"
-                className="ms-3"
+                className="ms-4"
                 onClick={() => handleDeleteWorkspace(workspace._id)}
               >
-                <FontAwesomeIcon icon={faTimesCircle} /> Delete
+                <FontAwesomeIcon icon={faTimesCircle} />
               </Button>
             </div>
           ))}
@@ -233,7 +322,7 @@ const Workspace = () => {
               <Form.Label>Upload Document</Form.Label>
               <Form.Control
                 type="file"
-                onChange={(e) => setSelectedFile(e.target.files[0])}
+                onChange={(e) => setSelectedFile(e.target.files[0])} // Capture selected file
               />
             </Form.Group>
             <Button variant="primary" type="submit">
@@ -266,48 +355,75 @@ const Workspace = () => {
             <tbody>
               {filteredDocuments.map((document) => (
                 <tr key={document._id}>
-                  <td>
-                    <div className="document-preview-container">
-                      {document.name}
-                      {/* Update this section to show the document preview on hover */}
-                      <div className="document-preview">
-                        <iframe
-                          src={`data:application/pdf;base64,${document.previewFile}`}
-                          title="Document Preview"
-                          width="100%"
-                          height="100%"
-                        />
-                      </div>
-                    </div>
-                  </td>
+                  <td>{document.name}</td>
                   <td>
                     <Button
                       variant="info"
                       onClick={() => handlePreviewDocument(document._id)}
-                      className="me-2"
+                      className="me-3"
                     >
-                      <FontAwesomeIcon icon={faEye} /> Preview
+                      <FontAwesomeIcon icon={faEye} />
                     </Button>
                     <Button
                       variant="success"
                       onClick={() =>
                         downloadDocument(document._id, document.name)
                       }
-                      className="me-2"
+                      className="me-3"
                     >
-                      <FontAwesomeIcon icon={faDownload} /> Download
+                      <FontAwesomeIcon icon={faDownload} />
                     </Button>
                     <Button
                       variant="danger"
-                      onClick={() => deleteDocument(document._id)}
+                      onClick={() => handleRecycleDocument(document._id)
+
+                      }
+                      className="me-3"
                     >
-                      <FontAwesomeIcon icon={faTrash} /> Delete
+                      <FontAwesomeIcon icon={faTrash} />
                     </Button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </Table>
+
+          {/* Recycle Bin Section */}
+          <h4>Recycle Bin</h4>
+          {recycleBin.length > 0 ? (
+            <Table striped bordered hover>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recycleBin.map((document) => (
+                  <tr key={document._id}>
+                    <td>{document.name}</td>
+                    <td>
+                      <Button
+                        variant="warning"
+                        onClick={() => handleRestoreDocument(document._id)}
+                        className="me-3"
+                      >
+                        <FontAwesomeIcon icon={faRecycle} /> Restore
+                      </Button>
+                      <Button
+                        variant="danger"
+                        onClick={() => handlePermanentDelete(document._id)}
+                      >
+                        <FontAwesomeIcon icon={faTrash} /> Permanently Delete
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          ) : (
+            <p>No documents in recycle bin.</p>
+          )}
 
           <Modal
             show={showPreviewModal}
@@ -320,16 +436,48 @@ const Workspace = () => {
             </Modal.Header>
             <Modal.Body>
               {previewFile ? (
-                <iframe
-                  src={`data:application/pdf;base64,${previewFile}`}
-                  title="Document Preview"
-                  width="100%"
-                  height="500px"
-                />
+                previewFileType === "pdf" ? (
+                  <iframe
+                    src={`data:application/pdf;base64,${previewFile}`}
+                    title="PDF Preview"
+                    width="100%"
+                    height="500px"
+                  />
+                ) : mimeType.includes("image") ? (
+                  <img
+                    src={`data:${mimeType};base64,${previewFile}`}
+                    alt="Document Preview"
+                    style={{ width: "100%", height: "auto" }}
+                  />
+                ) : previewFileType === "docx" ? (
+                  <div>
+                    <img
+                      src="/path/to/word-placeholder-image.png" // Placeholder image for Word document
+                      alt="Word Document Preview"
+                      style={{ width: "100px", height: "100px" }}
+                    />
+                    <p>
+                      This document cannot be previewed. Click the button below
+                      to download the document.
+                    </p>
+                    <a
+                      href={`data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,${previewFile}`}
+                      download={downloadFileName || "document.docx"} // Use dynamic file name
+                      className="btn btn-primary"
+                    >
+                      Download Document
+                    </a>
+                  </div>
+                ) : previewFileType === "text" ? (
+                  <pre>{atob(previewFile)}</pre>
+                ) : (
+                  <p>Preview is not available for this document type.</p>
+                )
               ) : (
                 <p>No preview available</p>
               )}
             </Modal.Body>
+
             <Modal.Footer>
               <Button
                 variant="secondary"

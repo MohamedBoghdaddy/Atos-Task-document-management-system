@@ -52,6 +52,91 @@ export const uploadDocument = async (req, res) => {
   }
 };
 
+// PUT /api/documents/:id/soft-delete
+export const softDeleteDocument = async (req, res) => {
+  try {
+    const document = await Document.findById(req.params.id);
+
+    if (!document) {
+      return res.status(404).json({ message: "Document not found" });
+    }
+
+    // Ensure the user owns the document
+    if (!document.owner || document.owner.toString() !== req.user.id) {
+      return res.status(403).json({
+        message: "You do not have permission to delete this document",
+      });
+    }
+
+    // Perform soft deletion
+    document.deleted = true;
+    await document.save();
+
+    return res
+      .status(200)
+      .json({
+        message: "Document moved to recycle bin successfully",
+        document,
+      });
+  } catch (error) {
+    console.error("Error soft deleting document:", error);
+    return res.status(500).json({ message: "Document deletion failed", error });
+  }
+};
+
+// PUT /api/documents/:id/restore
+export const restoreDocument = async (req, res) => {
+  try {
+    const document = await Document.findById(req.params.id);
+
+    if (!document) {
+      return res.status(404).json({ message: "Document not found" });
+    }
+
+    // Ensure the user owns the document
+    if (!document.owner || document.owner.toString() !== req.user.id) {
+      return res.status(403).json({
+        message: "You do not have permission to restore this document",
+      });
+    }
+
+    // Restore the document
+    document.deleted = false;
+    await document.save();
+
+    return res
+      .status(200)
+      .json({ message: "Document restored successfully", document });
+  } catch (error) {
+    console.error("Error restoring document:", error);
+    return res
+      .status(500)
+      .json({ message: "Document restoration failed", error });
+  }
+};
+
+// GET /api/documents/:workspaceId/documents
+export const listDocumentsInWorkspace = async (req, res) => {
+  try {
+    const { workspaceId } = req.params;
+    const { sortBy = "createdAt", order = "asc", filter = {} } = req.query;
+
+    // Fetch all documents in the workspace
+    const documents = await Document.find({
+      workspace: workspaceId,
+      ...filter,
+    })
+      .sort({ [sortBy]: order === "asc" ? 1 : -1 })
+      .exec();
+
+    return res.json(documents);
+  } catch (error) {
+    console.error("Error listing documents:", error);
+    return res.status(500).json({ message: "Error listing documents", error });
+  }
+};
+
+
 // GET /api/documents/download/:id
 export const downloadDocument = async (req, res) => {
   try {
@@ -82,36 +167,7 @@ export const downloadDocument = async (req, res) => {
   }
 };
 
-// DELETE /api/documents/:id
-export const deleteDocument = async (req, res) => {
-  try {
-    const document = await Document.findById(req.params.id);
-
-    if (!document) {
-      return res.status(404).json({ message: "Document not found" });
-    }
-
-    // Ensure the user owns the document
-    if (!document.owner || document.owner.toString() !== req.user.id) {
-      return res.status(403).json({
-        message: "You do not have permission to delete this document",
-      });
-    }
-
-    // Perform soft deletion
-    document.deleted = true;
-    await document.save();
-
-    return res
-      .status(200)
-      .json({ message: "Document soft deleted successfully" });
-  } catch (error) {
-    console.error("Error soft deleting document:", error);
-    return res.status(500).json({ message: "Document deletion failed", error });
-  }
-};
-
-// GET /api/documents/preview/:id
+// Preview document handler
 export const previewDocument = async (req, res) => {
   try {
     const document = await Document.findById(req.params.id);
@@ -134,37 +190,44 @@ export const previewDocument = async (req, res) => {
       return res.status(404).json({ message: "File not found on server" });
     }
 
-    // Read the file and return the base64 encoded string along with its MIME type
     const fileType = document.type;
-    const base64Data = fs.readFileSync(document.url, { encoding: "base64" });
+    const filePath = document.url;
+    const fileName = document.name; // Define the fileName from the document's name field
+
+    // Supported preview types (can be displayed inline)
+    const supportedPreviewTypes = [
+      "image/",
+      "application/pdf",
+      "video/",
+      "audio/",
+      "text/",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx support
+    ];
+
+    const isPreviewSupported = supportedPreviewTypes.some((type) =>
+      fileType.startsWith(type)
+    );
+
+    if (!isPreviewSupported) {
+      return res.status(200).json({
+        message:
+          "Preview not supported. Use the download link to view the document.",
+        downloadUrl: `http://localhost:4000/api/documents/download/${req.params.id}`,
+        isPreviewSupported,
+      });
+    }
+
+    // For previewable files (including .docx), return base64 encoded data
+    const base64Data = fs.readFileSync(filePath, { encoding: "base64" });
 
     return res.json({
       fileType,
       base64: base64Data,
+      fileName, // Send the document name to the frontend
+      isPreviewSupported, // Send isPreviewSupported status to the frontend
     });
   } catch (error) {
     console.error("Error previewing document:", error);
     return res.status(500).json({ message: "Document preview failed", error });
-  }
-};
-// GET /api/documents/:workspaceId/documents
-export const listDocumentsInWorkspace = async (req, res) => {
-  try {
-    const { workspaceId } = req.params;
-    const { sortBy = "createdAt", order = "asc", filter = {} } = req.query;
-
-    // Fetch all non-deleted documents in the workspace
-    const documents = await Document.find({
-      workspace: workspaceId,
-      deleted: false,
-      ...filter,
-    })
-      .sort({ [sortBy]: order === "asc" ? 1 : -1 })
-      .exec();
-
-    return res.json(documents);
-  } catch (error) {
-    console.error("Error listing documents:", error);
-    return res.status(500).json({ message: "Error listing documents", error });
   }
 };

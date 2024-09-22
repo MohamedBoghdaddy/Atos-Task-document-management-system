@@ -14,7 +14,7 @@ const router = express.Router();
 router.post("/createWorkspace", auth, createWorkspace);
 router.get("/getWorkspaceById", auth, getWorkspaceById);
 router.put("/updateWorkspace", auth, updateWorkspace);
-router.delete("/deleteWorkspace", auth, deleteWorkspace);
+router.delete("/deleteWorkspace/:id", auth, deleteWorkspace);
 router.get("/getAllWorkspaces", auth, getAllWorkspaces);
 router.get("/getWorkspacesByUser/:userId", auth, getWorkspacesByUser);
 

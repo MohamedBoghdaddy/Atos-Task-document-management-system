@@ -6,11 +6,12 @@ const WhoWeAre = () => {
     <section id="WhoWeAre" className="section">
       <h2>Who We Are</h2>
       <p>
-        HKI AI Career is a revolutionary platform leveraging artificial
-        intelligence to transform the job search experience for fresh graduates,
-        working professionals, and unemployed job seekers worldwide. Our mission
-        is to simplify the job application process by automating the search and
-        application for real-time job postings, saving you time and effort.
+        We are a dedicated team of professionals revolutionizing document
+        management through technology. Our Document Management System (DMS) is
+        designed to streamline how businesses and individuals store, organize,
+        and access their critical documents. With our system, managing documents
+        becomes effortless, ensuring security, efficiency, and reliability at
+        every step.
       </p>
     </section>
   );

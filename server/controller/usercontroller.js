@@ -137,12 +137,14 @@ export const login = async (req, res) => {
 
 // User logout
 export const logoutUser = async (req, res) => {
-  res.clearCookie("token");
-  localStorage.removeItem("user");
-  localStorage.removeItem("token");
-
-  res.status(200).json({ message: "Logout successful" });
+  try {
+    res.status(200).json({ message: "Logout successful" });
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({ message: "Logout failed" });
+  }
 };
+
 
 // Get user data
 export const getUser = async (req, res) => {

@@ -53,7 +53,9 @@ export const AuthProvider = ({ children }) => {
 
       if (token && !state.isAuthenticated) {
         const response = await axios.get(
-          "http://localhost:4000/api/users/checkAuth",
+          `${
+            process.env.REACT_APP_API_URL || "http://localhost:4000"
+          }/api/users/checkAuth`,
           {
             withCredentials: true,
           }
@@ -94,6 +96,10 @@ export const AuthProvider = ({ children }) => {
 
   // Memoize the context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({ state, dispatch }), [state]);
+
+  useEffect(() => {
+    console.log("AuthProvider state:", state);
+  }, [state]);
 
   return (
     <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>

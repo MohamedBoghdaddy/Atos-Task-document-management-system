@@ -1,6 +1,6 @@
 import React from "react";
 import { Container, Row, Col } from "react-bootstrap";
-import maram2 from "../assets/images/logo.png";
+import logo from "../assets/images/logo.png";
 import "../styles/Home.css";
 
 const StorytellingSection = () => (
@@ -8,32 +8,34 @@ const StorytellingSection = () => (
     <Row>
       <Col md={6}>
         <img
-          src={maram2}
-          alt="Company-team"
+          src={logo}
+          alt="DMS-logo"
           style={{ width: "400px", height: "auto" }}
         />
       </Col>
       <Col md={6}>
         <h2>Our Journey</h2>
         <p>
-          Born from a shared vision, we are more than just a job portal—we are a
-          beacon for those seeking purpose in their careers. Our team, with
-          roots in management, technology, and IT, came together with a singular
-          goal: to make finding the right job not just easier, but meaningful.
+          We started with a vision to simplify document management for
+          businesses and individuals alike. Our platform, rooted in innovation
+          and technology, has transformed the way documents are stored,
+          accessed, and shared.
         </p>
         <p>
-          We've been recognized for our impact, but what drives us is the
-          opportunity to change lives. Our AI-powered platform is not just about
-          finding jobs; it's about matching people with opportunities that feel
-          like home.
+          Built by a team of experts in IT and data security, our system ensures
+          that your important documents are not only organized but also
+          protected. We are here to provide a seamless experience that
+          eliminates the complexities of document management.
         </p>
         <p>
-          This journey is personal. We know the weight of seeking something more
-          than just work, and we're here to guide you toward that perfect fit.
-          Wherever you are in your career, let us help you find the path that
-          was meant for you.
+          Whether you are a business or an individual, our mission is to help
+          you manage your documents more efficiently and securely, empowering
+          you to focus on what matters most.
         </p>
-        <p>Start your search with us, and let’s build your future together.</p>
+        <p>
+          Join us on this journey and take control of your document management
+          needs today.
+        </p>
       </Col>
     </Row>
   </Container>

@@ -60,7 +60,13 @@ const NavBar = () => {
             >
               HOME
             </Link>
-
+            <ScrollLink
+              to="/Dashboard"
+              className="nav-link"
+              onClick={handleNavCollapse}
+            >
+              Dashboard{" "}
+            </ScrollLink>
             <ScrollLink
               to="/contact"
               className="nav-link"

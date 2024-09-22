@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import "../styles/Home.css";
 import { Container, Row, Col, Button } from "react-bootstrap";
 
-
 const CallToActionSection = () => {
   const navigate = useNavigate();
 
@@ -16,9 +15,12 @@ const CallToActionSection = () => {
       <Container>
         <Row>
           <Col>
-            <h2>Join Us Today</h2>
-            <p>Register and start applying for your dream jobs with ease.</p>
-            <Button onClick={handleRegisterClick}>Register Now</Button>
+            <h2>Secure Your Documents Today</h2>
+            <p>
+              Register and start managing your important documents with ease and
+              security.
+            </p>
+            <Button onClick={handleRegisterClick}>Get Started Now</Button>
           </Col>
         </Row>
       </Container>
