@@ -1,5 +1,5 @@
 import Workspace from "../models/WorkspaceModel.js";
-
+import mongoose from "mongoose";
 // Create a new workspace
 export const createWorkspace = async (req, res) => {
   const { name, description } = req.body;
@@ -44,27 +44,28 @@ export const getWorkspaceById = async (req, res) => {
 };
 // Retrieve workspaces by specific user ID (useful for admin functions)
 export const getWorkspacesByUser = async (req, res) => {
-  const { userId } = req.params;
-
   try {
-    const workspaces = await Workspace.find({
-      user: userId,
-      deleted: false,
-    });
+    const userId = req.params.userId;
 
-    if (workspaces.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No workspaces found for this user" });
+    // Check if userId is defined and is a valid ObjectId
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({
+        message: "Invalid or missing user ID",
+      });
     }
 
-    res.status(200).json(workspaces);
+    // Proceed with the query if the userId is valid
+    const workspaces = await Workspace.find({ user: userId }).exec();
+
+    return res.status(200).json(workspaces);
   } catch (error) {
-    console.error("Failed to fetch workspaces:", error);
-    res.status(500).json({ message: "Failed to fetch workspaces", error });
+    console.error("Error fetching workspaces by user ID:", error);
+    return res.status(500).json({
+      message: "Error fetching workspaces",
+      error: error.message,
+    });
   }
 };
-
 
 export const updateWorkspace = async (req, res) => {
   const { id } = req.params;
@@ -94,7 +95,6 @@ export const updateWorkspace = async (req, res) => {
 
 // Retrieve all workspaces for the authenticated user
 export const getAllWorkspaces = async (req, res) => {
-
   try {
     // Use req.user._id instead of expecting userId in params
     const workspaces = await Workspace.find({
@@ -114,7 +114,6 @@ export const getAllWorkspaces = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch workspaces", error });
   }
 };
-
 
 export const deleteWorkspace = async (req, res) => {
   const { id } = req.params;

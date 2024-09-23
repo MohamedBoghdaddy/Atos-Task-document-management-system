@@ -23,21 +23,24 @@ const DashboardProvider = ({ children }) => {
   const [previewFile, setPreviewFile] = useState(null);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
-  // Create a new workspace
-  const createWorkspace = useCallback(async (workspaceData) => {
-    try {
-      const response = await axios.post(
-        "http://localhost:4000/api/workspaces/createWorkspace",
-        workspaceData,
-        { withCredentials: true }
-      );
-      setWorkspaces((prevWorkspaces) => [...prevWorkspaces, response.data]);
-      toast.success("Workspace created successfully.");
-    } catch (error) {
-      console.error("Error creating workspace:", error);
-      toast.error("Failed to create workspace.");
-    }
-  }, []);
+  // Create workspace
+  const createWorkspace = useCallback(
+    async (workspaceData) => {
+      try {
+        const response = await axios.post(
+          "http://localhost:4000/api/workspaces/createWorkspace",
+          workspaceData,
+          { withCredentials: true }
+        );
+        setWorkspaces([...workspaces, response.data]);
+        toast.success("Workspace created successfully.");
+      } catch (error) {
+        console.error("Error creating workspace:", error);
+        toast.error("Failed to create workspace.");
+      }
+    },
+    [workspaces]
+  );
 
   // Fetch all workspaces
   const fetchWorkspaces = useCallback(async () => {
@@ -67,7 +70,7 @@ const DashboardProvider = ({ children }) => {
       const deletedDocuments = allDocuments.filter((doc) => doc.deleted);
 
       setDocuments(activeDocuments);
-      setRecycleBin(deletedDocuments);
+      setRecycleBin(deletedDocuments); // Update recycle bin with deleted documents
     } catch (error) {
       console.error("Error fetching documents:", error);
       toast.error("Failed to fetch documents.");
@@ -77,93 +80,94 @@ const DashboardProvider = ({ children }) => {
   }, []);
 
   // Upload a document
-  const uploadDocument = useCallback(async (workspaceId, documentData) => {
-    try {
-      const formData = new FormData();
-      formData.append("document", documentData.file);
-      formData.append("workspaceId", workspaceId);
+  const uploadDocument = useCallback(
+    async (workspaceId, documentData) => {
+      try {
+        const formData = new FormData();
+        formData.append("document", documentData.file);
+        formData.append("workspaceId", workspaceId);
 
-      const response = await axios.post(
-        "http://localhost:4000/api/documents/upload",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          withCredentials: true,
-        }
-      );
-      setDocuments((prevDocuments) => [
-        ...prevDocuments,
-        response.data.document,
-      ]);
-      toast.success("Document uploaded successfully.");
-    } catch (error) {
-      console.error("Error uploading document:", error);
-      toast.error("Failed to upload document.");
-    }
-  }, []);
+        const response = await axios.post(
+          "http://localhost:4000/api/documents/upload",
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+            withCredentials: true,
+          }
+        );
+        setDocuments([...documents, response.data.document]);
+        toast.success("Document uploaded successfully.");
+      } catch (error) {
+        console.error("Error uploading document:", error);
+        toast.error("Failed to upload document.");
+      }
+    },
+    [documents]
+  );
 
   // Soft delete a document (move to recycle bin)
-  const deleteDocument = useCallback(async (documentId) => {
-    try {
-      const response = await axios.put(
-        `http://localhost:4000/api/documents/${documentId}/soft-delete`,
-        { deleted: true },
-        { withCredentials: true }
-      );
-      const updatedDocument = response.data;
-
-      setDocuments((prevDocuments) =>
-        prevDocuments.filter((doc) => doc._id !== documentId)
-      );
-      setRecycleBin((prevRecycleBin) => [...prevRecycleBin, updatedDocument]);
-
-      toast.success("Document moved to recycle bin.");
-    } catch (error) {
-      console.error("Error moving document to recycle bin:", error);
-      toast.error("Failed to move document to recycle bin.");
-    }
-  }, []);
+  const deleteDocument = useCallback(
+    async (documentId) => {
+      try {
+        const response = await axios.put(
+          `http://localhost:4000/api/documents/${documentId}/soft-delete`, 
+          { deleted: true },
+          { withCredentials: true }
+        );
+        const updatedDocument = response.data;
+        setDocuments(documents.filter((doc) => doc._id !== documentId));
+        setRecycleBin([...recycleBin, updatedDocument]);
+        toast.success("Document moved to recycle bin.");
+      } catch (error) {
+        console.error("Error moving document to recycle bin:", error);
+        toast.error("Failed to move document to recycle bin.");
+      }
+    },
+    [documents, recycleBin]
+  );
 
   // Restore a document from the recycle bin
-  const restoreDocument = useCallback(async (documentId) => {
-    try {
-      const response = await axios.put(
-        `http://localhost:4000/api/documents/${documentId}`,
-        { deleted: true },
-        { withCredentials: true }
-      );
-      const restoredDocument = response.data;
-
-      setRecycleBin((prevRecycleBin) =>
-        prevRecycleBin.filter((doc) => doc._id !== documentId)
-      );
-      setDocuments((prevDocuments) => [...prevDocuments, restoredDocument]);
-
-      toast.success("Document restored successfully.");
-    } catch (error) {
-      console.error("Error restoring document:", error);
-      toast.error("Failed to restore document.");
-    }
-  }, []);
+  const restoreDocument = useCallback(
+    async (documentId) => {
+      try {
+        const response = await axios.put(
+          `http://localhost:4000/api/documents/${documentId}/restore`, 
+          { deleted: false },
+          { withCredentials: true }
+        );
+        const restoredDocument = response.data;
+        setRecycleBin(recycleBin.filter((doc) => doc._id !== documentId));
+        setDocuments([...documents, restoredDocument]);
+        toast.success("Document restored successfully.");
+      } catch (error) {
+        console.error("Error restoring document:", error);
+        toast.error("Failed to restore document.");
+      }
+    },
+    [documents, recycleBin]
+  );
 
   // Delete a workspace
-  const deleteWorkspace = useCallback(async (workspaceId) => {
-    try {
-      await axios.delete(
-        `http://localhost:4000/api/workspaces/deleteWorkspace/${workspaceId}`,
-        { withCredentials: true }
-      );
-      setWorkspaces((prevWorkspaces) =>
-        prevWorkspaces.filter((workspace) => workspace._id !== workspaceId)
-      );
-      toast.success("Workspace deleted successfully.");
-    } catch (error) {
-      console.error("Error deleting workspace:", error);
-      toast.error("Failed to delete workspace.");
-    }
-  }, []);
+  const deleteWorkspace = useCallback(
+    async (workspaceId) => {
+      try {
+        await axios.delete(
+          `http://localhost:4000/api/workspaces/deleteWorkspace/${workspaceId}`,
+          { withCredentials: true }
+        );
+        setWorkspaces(
+          workspaces.filter((workspace) => workspace._id !== workspaceId)
+        );
+        toast.success("Workspace deleted successfully.");
+      } catch (error) {
+        console.error("Error deleting workspace:", error);
+        toast.error("Failed to delete workspace.");
+      }
+    },
+    [workspaces]
+  );
 
   // Preview a document
   const previewDocument = useCallback(async (documentId) => {
@@ -198,78 +202,71 @@ const DashboardProvider = ({ children }) => {
     }
   }, []);
 
-  const searchDocuments = useCallback((term) => {
-    setSearchTerm(term);
-  }, []);
-
   // Update document metadata
-  const updateDocumentMetadata = useCallback(async (documentId, metadata) => {
-    try {
-      const response = await axios.put(
-        `http://localhost:4000/api/documents/${documentId}/metadata`,
-        metadata,
-        { withCredentials: true }
-      );
-      const updatedDocument = response.data.document;
-      setDocuments((prevDocuments) =>
-        prevDocuments.map((doc) =>
-          doc._id === documentId ? updatedDocument : doc
-        )
-      );
-      toast.success("Document metadata updated.");
-    } catch (error) {
-      console.error("Error updating document metadata:", error);
-      toast.error("Failed to update document metadata.");
-    }
-  }, []);
-
-  // Restore a previous document version
-  const restoreDocumentVersion = useCallback(
-    async (documentId, versionNumber) => {
+  const updateDocumentMetadata = useCallback(
+    async (documentId, metadata) => {
       try {
         const response = await axios.put(
-          `http://localhost:4000/api/documents/${documentId}/restore-version`,
-          { versionNumber },
+          `http://localhost:4000/api/documents/${documentId}/metadata`,
+          metadata,
           { withCredentials: true }
         );
-        const restoredDocument = response.data.document;
-        setDocuments((prevDocuments) =>
-          prevDocuments.map((doc) =>
-            doc._id === documentId ? restoredDocument : doc
-          )
-        );
-        toast.success("Document restored to previous version.");
-      } catch (error) {
-        console.error("Error restoring document version:", error);
-        toast.error("Failed to restore document version.");
-      }
-    },
-    []
-  );
-
-  // Grant access to other users
-  const grantDocumentAccess = useCallback(
-    async (documentId, userId, permissions) => {
-      try {
-        const response = await axios.post(
-          `http://localhost:4000/api/documents/${documentId}/access-control`,
-          { user: userId, permissions },
-          { withCredentials: true }
-        );
-        const updatedDocument = response.data.document;
+        const updatedDocument = response.data;
         setDocuments((prevDocuments) =>
           prevDocuments.map((doc) =>
             doc._id === documentId ? updatedDocument : doc
           )
         );
-        toast.success("Access granted successfully.");
+        toast.success("Document metadata updated successfully.");
       } catch (error) {
-        console.error("Error granting document access:", error);
-        toast.error("Failed to grant document access.");
+        console.error("Error updating document metadata:", error);
+        toast.error("Failed to update document metadata.");
       }
     },
-    []
+    [documents]
   );
+
+  // Fetch document metadata
+  const getDocumentMetadata = useCallback(async (documentId) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:4000/api/documents/${documentId}/metadata`,
+        { withCredentials: true }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching document metadata:", error);
+      toast.error("Failed to fetch document metadata.");
+    }
+  }, []);
+
+  // Update document tags
+  const updateDocumentTags = useCallback(
+    async (documentId, tags) => {
+      try {
+        const response = await axios.put(
+          `http://localhost:4000/api/documents/${documentId}/tags`,
+          { tags },
+          { withCredentials: true }
+        );
+        const updatedDocument = response.data;
+        setDocuments((prevDocuments) =>
+          prevDocuments.map((doc) =>
+            doc._id === documentId ? updatedDocument : doc
+          )
+        );
+        toast.success("Document tags updated successfully.");
+      } catch (error) {
+        console.error("Error updating document tags:", error);
+        toast.error("Failed to update document tags.");
+      }
+    },
+    [documents]
+  );
+
+  const searchDocuments = useCallback((term) => {
+    setSearchTerm(term);
+  }, []);
 
   const filteredDocuments = useMemo(() => {
     return documents.filter((document) =>
@@ -299,9 +296,9 @@ const DashboardProvider = ({ children }) => {
       previewDocument,
       downloadDocument,
       searchDocuments,
-      updateDocumentMetadata,
-      restoreDocumentVersion,
-      grantDocumentAccess,
+      updateDocumentMetadata, // Add document metadata update functionality
+      getDocumentMetadata, // Add document metadata retrieval functionality
+      updateDocumentTags, // Add document tags update functionality
       previewFile,
       showPreviewModal,
       setShowPreviewModal,
@@ -324,9 +321,9 @@ const DashboardProvider = ({ children }) => {
       previewDocument,
       downloadDocument,
       searchDocuments,
-      updateDocumentMetadata,
-      restoreDocumentVersion,
-      grantDocumentAccess,
+      updateDocumentMetadata, // Include in memoized dependencies
+      getDocumentMetadata,
+      updateDocumentTags,
     ]
   );
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Button, Form, Table, Modal, Spinner } from "react-bootstrap";
+import { Button, Form, Table, Modal } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUpload,
@@ -9,12 +9,12 @@ import {
   faDownload,
   faTimesCircle,
   faRecycle,
+  faEdit,
 } from "@fortawesome/free-solid-svg-icons";
 import Notification from "../Dashboard/Notification";
 import "../styles/Workspace.css";
 import { DashboardContext } from "../../../context/DashboardContext";
 import { useAuthContext } from "../../../context/AuthContext";
-import "bootstrap/dist/css/bootstrap.min.css";
 
 const Workspace = () => {
   const { user } = useAuthContext();
@@ -29,54 +29,43 @@ const Workspace = () => {
     deleteDocument,
     previewDocument,
     downloadDocument,
-    updateDocumentMetadata,
-    restoreDocumentVersion,
+    updateDocumentMetadata, // New functionality
+    updateDocumentTags, // New functionality
     workspaces,
     documents,
     showPreviewModal,
     setShowPreviewModal,
+    recycleBin, // For recycle bin
   } = useContext(DashboardContext);
 
   const [selectedWorkspace, setSelectedWorkspace] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null); // Handle selected file
   const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
   const [workspaceName, setWorkspaceName] = useState("");
   const [workspaceDescription, setWorkspaceDescription] = useState("");
   const [workspaceVisibility, setWorkspaceVisibility] = useState("private");
   const [notification, setNotification] = useState(null);
   const [filteredDocuments, setFilteredDocuments] = useState([]);
-  const [recycleBin, setRecycleBin] = useState([]);
-  const [previewFileType, setPreviewFileType] = useState("");
-  const [previewFile, setPreviewFile] = useState("");
-  const [mimeType, setMimeType] = useState("");
-  const [downloadFileName, setDownloadFileName] = useState("");
-  const [metadataModal, setMetadataModal] = useState(false);
-  const [documentMetadata, setDocumentMetadata] = useState({
-    name: "",
-    tags: [],
-  });
 
-  const [loading, setLoading] = useState(true);
+  // New states for document metadata and tags modal
+  const [showMetadataModal, setShowMetadataModal] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState(null);
+  const [metadata, setMetadata] = useState("");
+  const [tags, setTags] = useState("");
+
+  const [previewFileType, setPreviewFileType] = useState(""); // Track file type
+  const [previewFile, setPreviewFile] = useState(""); // Track the file content
+  const [mimeType, setMimeType] = useState(""); // Track MIME type for document preview
+  const [downloadFileName, setDownloadFileName] = useState("");
 
   // Fetch workspaces for the logged-in user
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true); // Start loading
-      try {
-        await fetchWorkspaces();
-        if (user && user._id) {
-          await fetchWorkspacesByUserId(user._id);
-        }
-      } catch (error) {
-        console.error("Error fetching workspaces:", error);
-      } finally {
-        setLoading(false); // Stop loading after data fetch
-      }
-    };
-
-    loadData();
-  }, [fetchWorkspaces, fetchWorkspacesByUserId, user]);
+    fetchWorkspaces();
+    if (user && user._id) {
+      fetchWorkspacesByUserId(user._id);
+    }
+  }, [fetchWorkspaces, user, fetchWorkspacesByUserId]);
 
   useEffect(() => {
     if (searchTerm.length >= 3) {
@@ -98,32 +87,22 @@ const Workspace = () => {
     };
 
     try {
-      setLoading(true);
       await createWorkspace(workspaceData);
       setNotification({
         type: "success",
         message: "Workspace created successfully!",
       });
       setShowWorkspaceModal(false);
-      await fetchWorkspaces(); // Fetch updated workspaces after creation
+      fetchWorkspaces();
     } catch (error) {
       console.error("Error creating workspace:", error);
       setNotification({ type: "error", message: "Workspace creation failed!" });
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleWorkspaceSelection = async (workspace) => {
+  const handleWorkspaceSelection = (workspace) => {
     setSelectedWorkspace(workspace);
-    setLoading(true);
-    try {
-      await fetchDocuments(workspace._id);
-    } catch (error) {
-      console.error("Error fetching documents:", error);
-    } finally {
-      setLoading(false);
-    }
+    fetchDocuments(workspace._id);
   };
 
   const handleFileUpload = async (event) => {
@@ -134,18 +113,15 @@ const Workspace = () => {
     }
 
     try {
-      setLoading(true);
       await uploadDocument(selectedWorkspace._id, { file: selectedFile });
       setNotification({
         type: "success",
         message: "File uploaded successfully!",
       });
-      await fetchDocuments(selectedWorkspace._id); // Refresh documents list after upload
+      fetchDocuments(selectedWorkspace._id); // Refresh documents list after upload
     } catch (error) {
       console.error("Error uploading file:", error);
       setNotification({ type: "error", message: "File upload failed!" });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -170,14 +146,15 @@ const Workspace = () => {
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
       ) {
         setPreviewFileType("docx");
-        setPreviewFile(response.html);
+        setPreviewFile(response.html); // Store the HTML for rendering
       } else if (response.fileType.includes("text")) {
         setPreviewFileType(response.fileType);
         setPreviewFile(response.base64);
-        setDownloadFileName(response.fileName);
+        setDownloadFileName(response.fileName); // Set the file name dynamically
       } else {
         setPreviewFileType("unsupported");
       }
+
       setPreviewFile(response.base64);
       setMimeType(response.fileType);
       setShowPreviewModal(true);
@@ -187,340 +164,299 @@ const Workspace = () => {
     }
   };
 
-  // Add handleDeleteWorkspace function
-  const handleDeleteWorkspace = async (workspaceId) => {
+  const handleMetadataModal = (document) => {
+    setSelectedDocument(document);
+    setMetadata(document.metadata || "");
+    setTags(document.tags || "");
+    setShowMetadataModal(true);
+  };
+
+  const handleMetadataUpdate = async (event) => {
+    event.preventDefault();
     try {
-      await deleteWorkspace(workspaceId); // Soft delete
+      await updateDocumentMetadata(selectedDocument._id, { metadata });
+      await updateDocumentTags(selectedDocument._id, tags.split(","));
       setNotification({
         type: "success",
-        message: "Workspace deleted successfully!",
+        message: "Document metadata and tags updated successfully!",
       });
-      await fetchWorkspaces(); // Refresh workspaces after deletion
+      fetchDocuments(selectedWorkspace._id);
+      setShowMetadataModal(false);
     } catch (error) {
-      console.error("Error deleting workspace:", error);
+      console.error("Error updating metadata/tags:", error);
       setNotification({
         type: "error",
-        message: "Failed to delete workspace.",
+        message: "Failed to update metadata/tags.",
       });
     }
   };
-
-  const handleRecycleDocument = async (documentId) => {
-    try {
-      await deleteDocument(documentId); // Soft delete
-      setFilteredDocuments(
-        filteredDocuments.filter((doc) => doc._id !== documentId)
-      );
-      setNotification({
-        type: "success",
-        message: "Document moved to recycle bin!",
-      });
-    } catch (error) {
-      console.error("Error recycling document:", error);
-      setNotification({
-        type: "error",
-        message: "Failed to move document to recycle bin.",
-      });
-    }
-  };
-
-  const handleRestoreDocument = (documentId) => {
-    restoreDocumentVersion(documentId, 1); // Restoring to version 1 as an example
-    setNotification({
-      type: "success",
-      message: "Document restored successfully!",
-    });
-  };
-const handleMetadataUpdate = async (documentId, metadata) => {
-  try {
-    await updateDocumentMetadata(documentId, metadata); // Assuming updateDocumentMetadata is a function that sends a request to update metadata
-    setNotification({
-      type: "success",
-      message: "Document metadata updated successfully!",
-    });
-  } catch (error) {
-    console.error("Error updating document metadata:", error);
-    setNotification({
-      type: "error",
-      message: "Failed to update document metadata.",
-    });
-  }
-};
 
   return (
-    <div className={`workspace-container ${loading ? "loading" : "loaded"}`}>
-      {loading ? (
-        <div className="centered-spinner">
-          <Spinner animation="border" role="status">
-            <span className="sr-only">Loading...</span>
-          </Spinner>
+    <div className="workspace-container">
+      {/* Add Notification component */}
+      {notification && (
+        <Notification type={notification.type} message={notification.message} />
+      )}
+
+      {/* Workspace creation and selection */}
+      <Button
+        variant="primary"
+        onClick={() => setShowWorkspaceModal(true)}
+        className="mb-3"
+      >
+        Create Workspace
+      </Button>
+
+      <Modal
+        show={showWorkspaceModal}
+        onHide={() => setShowWorkspaceModal(false)}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Create Workspace</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form onSubmit={handleWorkspaceCreation}>
+            <Form.Group controlId="workspaceName" className="mb-3">
+              <Form.Label>Workspace Name</Form.Label>
+              <Form.Control
+                type="text"
+                value={workspaceName}
+                onChange={(e) => setWorkspaceName(e.target.value)}
+                required
+              />
+            </Form.Group>
+            <Form.Group controlId="workspaceDescription" className="mb-3">
+              <Form.Label>Workspace Description</Form.Label>
+              <Form.Control
+                type="text"
+                value={workspaceDescription}
+                onChange={(e) => setWorkspaceDescription(e.target.value)}
+              />
+            </Form.Group>
+            <Form.Group controlId="workspaceVisibility" className="mb-3">
+              <Form.Label>Visibility</Form.Label>
+              <Form.Control
+                as="select"
+                value={workspaceVisibility}
+                onChange={(e) => setWorkspaceVisibility(e.target.value)}
+              >
+                <option value="private">Private</option>
+                <option value="public">Public</option>
+              </Form.Control>
+            </Form.Group>
+            <Button variant="primary" type="submit">
+              Create Workspace
+            </Button>
+          </Form>
+        </Modal.Body>
+      </Modal>
+
+      {/* Workspace selection */}
+      <h3>Select a Workspace</h3>
+      {workspaces.length > 0 ? (
+        <div className="workspace-list">
+          {workspaces.map((workspace) => (
+            <div
+              key={workspace._id}
+              onClick={() => handleWorkspaceSelection(workspace)}
+              className={`workspace-item ${
+                selectedWorkspace?._id === workspace._id ? "selected" : ""
+              }`}
+            >
+              {workspace.name}
+              <Button
+                variant="danger"
+                className="ms-4"
+                onClick={() => deleteWorkspace(workspace._id)}
+              >
+                <FontAwesomeIcon icon={faTimesCircle} />
+              </Button>
+            </div>
+          ))}
         </div>
       ) : (
+        <p>No workspaces available.</p>
+      )}
+
+      {/* Documents list */}
+      {selectedWorkspace && (
         <>
-          <h2>Workspace</h2>
+          <h4>Documents in Workspace: {selectedWorkspace.name}</h4>
+          <Form onSubmit={handleFileUpload} className="mb-3">
+            <Form.Group controlId="formFile" className="mb-3">
+              <Form.Label>Upload Document</Form.Label>
+              <Form.Control
+                type="file"
+                onChange={(e) => setSelectedFile(e.target.files[0])}
+              />
+            </Form.Group>
+            <Button variant="primary" type="submit">
+              <FontAwesomeIcon icon={faUpload} /> Upload
+            </Button>
+          </Form>
 
-          {notification && (
-            <Notification
-              type={notification.type}
-              message={notification.message}
-            />
-          )}
+          <Form className="mb-3">
+            <Form.Group controlId="search" className="mb-3">
+              <Form.Label>Search Documents</Form.Label>
+              <div className="search-bar">
+                <Form.Control
+                  type="text"
+                  placeholder="Search by document name"
+                  value={searchTerm}
+                  onChange={handleSearch}
+                />
+                <FontAwesomeIcon icon={faSearch} className="search-icon" />
+              </div>
+            </Form.Group>
+          </Form>
 
-          <Button
-            variant="primary"
-            onClick={() => setShowWorkspaceModal(true)}
-            className="mb-3"
-          >
-            Create Workspace
-          </Button>
+          <Table striped bordered hover>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredDocuments.map((document) => (
+                <tr key={document._id}>
+                  <td>{document.name}</td>
+                  <td>
+                    <Button
+                      variant="info"
+                      onClick={() => handlePreviewDocument(document._id)}
+                      className="me-3"
+                    >
+                      <FontAwesomeIcon icon={faEye} /> 
+                    </Button>
+                    <Button
+                      variant="success"
+                      onClick={() =>
+                        downloadDocument(document._id, document.name)
+                      }
+                      className="me-3"
+                    >
+                      <FontAwesomeIcon icon={faDownload} /> 
+                    </Button>
+                    <Button
+                      variant="danger"
+                      onClick={() => deleteDocument(document._id)}
+                      className="me-3"
+                    >
+                      <FontAwesomeIcon icon={faTrash} /> 
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => handleMetadataModal(document)}
+                      className="me-3"
+                    >
+                      <FontAwesomeIcon icon={faEdit} /> Edit Metadata/Tags
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
 
+          {/* Metadata and Tags Modal */}
           <Modal
-            show={showWorkspaceModal}
-            onHide={() => setShowWorkspaceModal(false)}
+            show={showMetadataModal}
+            onHide={() => setShowMetadataModal(false)}
             centered
           >
             <Modal.Header closeButton>
-              <Modal.Title>Create Workspace</Modal.Title>
+              <Modal.Title>Edit Document Metadata/Tags</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-              <Form onSubmit={handleWorkspaceCreation}>
-                <Form.Group controlId="workspaceName" className="mb-3">
-                  <Form.Label>Workspace Name</Form.Label>
+              <Form onSubmit={handleMetadataUpdate}>
+                <Form.Group controlId="metadata" className="mb-3">
+                  <Form.Label>Metadata</Form.Label>
                   <Form.Control
                     type="text"
-                    value={workspaceName}
-                    onChange={(e) => setWorkspaceName(e.target.value)}
-                    required
+                    value={metadata}
+                    onChange={(e) => setMetadata(e.target.value)}
                   />
                 </Form.Group>
-                <Form.Group controlId="workspaceDescription" className="mb-3">
-                  <Form.Label>Workspace Description</Form.Label>
+                <Form.Group controlId="tags" className="mb-3">
+                  <Form.Label>Tags (comma-separated)</Form.Label>
                   <Form.Control
                     type="text"
-                    value={workspaceDescription}
-                    onChange={(e) => setWorkspaceDescription(e.target.value)}
+                    value={tags}
+                    onChange={(e) => setTags(e.target.value)}
                   />
-                </Form.Group>
-                <Form.Group controlId="workspaceVisibility" className="mb-3">
-                  <Form.Label>Visibility</Form.Label>
-                  <Form.Control
-                    as="select"
-                    value={workspaceVisibility}
-                    onChange={(e) => setWorkspaceVisibility(e.target.value)}
-                  >
-                    <option value="private">Private</option>
-                    <option value="public">Public</option>
-                  </Form.Control>
                 </Form.Group>
                 <Button variant="primary" type="submit">
-                  Create Workspace
+                  Save Changes
                 </Button>
               </Form>
             </Modal.Body>
           </Modal>
-
-          <h3>Select a Workspace</h3>
-          {workspaces && workspaces.length > 0 ? (
-            <div className="workspace-list">
-              {workspaces.map((workspace) => (
-                <div
-                  key={workspace._id}
-                  onClick={() => handleWorkspaceSelection(workspace)}
-                  className={`workspace-item ${
-                    selectedWorkspace?._id === workspace._id ? "selected" : ""
-                  }`}
-                >
-                  {workspace.name}
-                  <Button
-                    variant="danger"
-                    className="ms-4"
-                    onClick={() => handleDeleteWorkspace(workspace._id)}
-                  >
-                    <FontAwesomeIcon icon={faTimesCircle} />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p>No workspaces available.</p>
-          )}
-
-          {selectedWorkspace && (
-            <>
-              <h4>Documents in Workspace: {selectedWorkspace.name}</h4>
-
-              <Form onSubmit={handleFileUpload} className="mb-3">
-                <Form.Group controlId="formFile" className="mb-3">
-                  <Form.Label>Upload Document</Form.Label>
-                  <Form.Control
-                    type="file"
-                    onChange={(e) => setSelectedFile(e.target.files[0])}
-                  />
-                </Form.Group>
-                <Button variant="primary" type="submit">
-                  <FontAwesomeIcon icon={faUpload} /> Upload
-                </Button>
-              </Form>
-
-              <Form className="mb-3">
-                <Form.Group controlId="search" className="mb-3">
-                  <Form.Label>Search Documents</Form.Label>
-                  <div className="search-bar">
-                    <Form.Control
-                      type="text"
-                      placeholder="Search by document name"
-                      value={searchTerm}
-                      onChange={handleSearch}
-                    />
-                    <FontAwesomeIcon icon={faSearch} className="search-icon" />
-                  </div>
-                </Form.Group>
-              </Form>
-
-              <Table striped bordered hover>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredDocuments.map((document) => (
-                    <tr key={document._id}>
-                      <td>{document.name}</td>
-                      <td>
-                        <Button
-                          variant="info"
-                          onClick={() => handlePreviewDocument(document._id)}
-                          className="me-3"
-                        >
-                          <FontAwesomeIcon icon={faEye} />
-                        </Button>
-                        <Button
-                          variant="success"
-                          onClick={() =>
-                            downloadDocument(document._id, document.name)
-                          }
-                          className="me-3"
-                        >
-                          <FontAwesomeIcon icon={faDownload} />
-                        </Button>
-                        <Button
-                          variant="warning"
-                          onClick={() => handleMetadataUpdate(document._id)}
-                          className="me-3"
-                        >
-                          Update Metadata
-                        </Button>
-                        <Button
-                          variant="danger"
-                          onClick={() => handleRecycleDocument(document._id)}
-                          className="me-3"
-                        >
-                          <FontAwesomeIcon icon={faTrash} />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-
-              <h4>Recycle Bin</h4>
-              {recycleBin.length > 0 ? (
-                <Table striped bordered hover>
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recycleBin.map((document) => (
-                      <tr key={document._id}>
-                        <td>{document.name}</td>
-                        <td>
-                          <Button
-                            variant="warning"
-                            onClick={() => handleRestoreDocument(document._id)}
-                            className="me-3"
-                          >
-                            <FontAwesomeIcon icon={faRecycle} /> Restore
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              ) : (
-                <p>No documents in recycle bin.</p>
-              )}
-
-              <Modal
-                show={showPreviewModal}
-                onHide={() => setShowPreviewModal(false)}
-                size="lg"
-                centered
-              >
-                <Modal.Header closeButton>
-                  <Modal.Title>Document Preview</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                  {previewFile ? (
-                    previewFileType === "pdf" ? (
-                      <iframe
-                        src={`data:application/pdf;base64,${previewFile}`}
-                        title="PDF Preview"
-                        width="100%"
-                        height="500px"
-                      />
-                    ) : mimeType.includes("image") ? (
-                      <img
-                        src={`data:${mimeType};base64,${previewFile}`}
-                        alt="Document Preview"
-                        style={{ width: "100%", height: "auto" }}
-                      />
-                    ) : previewFileType === "docx" ? (
-                      <div>
-                        <img
-                          src="/path/to/word-placeholder-image.png"
-                          alt="Word Document Preview"
-                          style={{ width: "100px", height: "100px" }}
-                        />
-                        <p>
-                          This document cannot be previewed. Click the button
-                          below to download the document.
-                        </p>
-                        <a
-                          href={`data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,${previewFile}`}
-                          download={downloadFileName || "document.docx"}
-                          className="btn btn-primary"
-                        >
-                          Download Document
-                        </a>
-                      </div>
-                    ) : previewFileType === "text" ? (
-                      <pre>{atob(previewFile)}</pre>
-                    ) : (
-                      <p>Preview is not available for this document type.</p>
-                    )
-                  ) : (
-                    <p>No preview available</p>
-                  )}
-                </Modal.Body>
-
-                <Modal.Footer>
-                  <Button
-                    variant="secondary"
-                    onClick={() => setShowPreviewModal(false)}
-                  >
-                    Close
-                  </Button>
-                </Modal.Footer>
-              </Modal>
-            </>
-          )}
         </>
       )}
+
+      {/* Preview Modal */}
+      <Modal
+        show={showPreviewModal}
+        onHide={() => setShowPreviewModal(false)}
+        size="lg"
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Document Preview</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {previewFile ? (
+            previewFileType === "pdf" ? (
+              <iframe
+                src={`data:application/pdf;base64,${previewFile}`}
+                title="PDF Preview"
+                width="100%"
+                height="500px"
+              />
+            ) : mimeType.includes("image") ? (
+              <img
+                src={`data:${mimeType};base64,${previewFile}`}
+                alt="Document Preview"
+                style={{ width: "100%", height: "auto" }}
+              />
+            ) : previewFileType === "docx" ? (
+              <div>
+                <img
+                  src="/path/to/word-placeholder-image.png"
+                  alt="Word Document Preview"
+                  style={{ width: "100px", height: "100px" }}
+                />
+                <p>
+                  This document cannot be previewed. Click the button below to
+                  download.
+                </p>
+                <a
+                  href={`data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,${previewFile}`}
+                  download={downloadFileName || "document.docx"}
+                  className="btn btn-primary"
+                >
+                  Download Document
+                </a>
+              </div>
+            ) : previewFileType === "text" ? (
+              <pre>{atob(previewFile)}</pre>
+            ) : (
+              <p>Preview is not available for this document type.</p>
+            )
+          ) : (
+            <p>No preview available</p>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            variant="secondary"
+            onClick={() => setShowPreviewModal(false)}
+          >
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 };

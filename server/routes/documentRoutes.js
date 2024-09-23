@@ -8,6 +8,8 @@ import {
   previewDocument,
   updateDocumentMetadata,
   getDocumentMetadata,
+  listDocumentsInRecycleBin,
+
 } from "../controller/documentController.js";
 
 import { auth } from "../Middleware/authMiddleware.js"; // Assuming you have auth middleware
@@ -25,6 +27,7 @@ router.put("/:id/restore", auth, restoreDocument);
 
 // List documents in a workspace
 router.get("/:workspaceId/documents", auth, listDocumentsInWorkspace);
+router.get("/:workspaceId/recycle-bin", auth, listDocumentsInRecycleBin);
 
 // Download a document
 router.get("/download/:id", auth, downloadDocument);

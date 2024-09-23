@@ -124,6 +124,8 @@ export const listDocumentsInWorkspace = async (req, res) => {
 
     // Fetch all documents in the workspace
     const documents = await Document.find({
+
+
       workspace: workspaceId,
       ...filter,
     })
@@ -269,3 +271,26 @@ export const updateDocumentTags = async (req, res) => {
   }
 };
 
+
+
+// GET /api/documents/:workspaceId/documents
+export const listDocumentsInRecycleBin = async (req, res) => {
+  try {
+    const { workspaceId } = req.params;
+    const { sortBy = "createdAt", order = "asc", filter = {} } = req.query;
+
+    // Fetch only the documents that are deleted within the specified workspace
+    const documents = await Document.find({
+      workspace: workspaceId,
+      deleted: true, 
+      ...filter,
+    })
+      .sort({ [sortBy]: order === "asc" ? 1 : -1 })
+      .exec();
+
+    return res.json(documents);
+  } catch (error) {
+    console.error("Error listing documents:", error);
+    return res.status(500).json({ message: "Error listing documents", error });
+  }
+};

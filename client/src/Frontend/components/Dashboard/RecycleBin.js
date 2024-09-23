@@ -1,44 +1,46 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Button, Table, Modal, Spinner } from "react-bootstrap";
+import { Button, Table, Spinner } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faRecycle, faTrash } from "@fortawesome/free-solid-svg-icons";
 import Notification from "../Dashboard/Notification";
-import "../styles/Dashboard.css";
 import { DashboardContext } from "../../../context/DashboardContext";
 import "bootstrap/dist/css/bootstrap.min.css";
 
 const RecycleBin = () => {
   const {
-    fetchRecycledDocuments,
+    fetchDocumentsinRecycleBin,
     restoreDocument,
-    deleteDocumentPermanently,
-    recycledDocuments,
+    deleteDocument,
+    recycleBin,
   } = useContext(DashboardContext);
-
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
-      setLoading(true); // Start loading
+      setLoading(true);
       try {
-        await restoreDocument();
+        await fetchDocumentsinRecycleBin();
       } catch (error) {
         console.error("Error fetching recycled documents:", error);
+        setNotification({
+          type: "error",
+          message: "Failed to load documents from recycle bin.",
+        });
       } finally {
-        setLoading(false); // Stop loading after data fetch
+        setLoading(false);
       }
     };
 
     loadData();
-  }, [restoreDocument]);
+  }, [fetchDocumentsinRecycleBin]);
 
-  const handleRestoreDocument = async (documentId) => {
+  const handleRestore = async (documentId) => {
     try {
       await restoreDocument(documentId);
       setNotification({
         type: "success",
-        message: "Document restored successfully!",
+        message: "Document restored successfully.",
       });
     } catch (error) {
       console.error("Error restoring document:", error);
@@ -49,7 +51,21 @@ const RecycleBin = () => {
     }
   };
 
-
+  const handlePermanentDelete = async (documentId) => {
+    try {
+      await deleteDocument(documentId);
+      setNotification({
+        type: "success",
+        message: "Document permanently deleted!",
+      });
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      setNotification({
+        type: "error",
+        message: "Failed to permanently delete document.",
+      });
+    }
+  };
 
   return (
     <div className="recycle-bin-container">
@@ -62,7 +78,6 @@ const RecycleBin = () => {
       ) : (
         <>
           <h2>Recycle Bin</h2>
-
           {notification && (
             <Notification
               type={notification.type}
@@ -70,27 +85,32 @@ const RecycleBin = () => {
             />
           )}
 
-          {recycledDocuments && recycledDocuments.length > 0 ? (
+          {Array.isArray(recycleBin) && recycleBin.length > 0 ? ( // Check if recycleBin is an array and has items
             <Table striped bordered hover>
               <thead>
                 <tr>
-                  <th>Name</th>
+                  <th>Document Name</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {recycledDocuments.map((document) => (
+                {recycleBin.map((document) => (
                   <tr key={document._id}>
                     <td>{document.name}</td>
                     <td>
                       <Button
                         variant="warning"
-                        onClick={() => handleRestoreDocument(document._id)}
+                        onClick={() => handleRestore(document._id)}
                         className="me-3"
                       >
                         <FontAwesomeIcon icon={faRecycle} /> Restore
                       </Button>
-             
+                      <Button
+                        variant="danger"
+                        onClick={() => handlePermanentDelete(document._id)}
+                      >
+                        <FontAwesomeIcon icon={faTrash} /> Permanently Delete
+                      </Button>
                     </td>
                   </tr>
                 ))}
