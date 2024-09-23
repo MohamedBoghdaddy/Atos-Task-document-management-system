@@ -5,11 +5,11 @@ import Signup from "./Frontend/components/LOGIN&REGISTRATION/Signup/Signup";
 import Home from "./Frontend/components/Home/home";
 import NavBar from "./Frontend/components/Home/Navbar";
 import Sidebar from "./Frontend/components/Dashboard/Sidebar";
-import PaymentHistory from "./Frontend/components/Dashboard/PaymentHistory";
 import Footer from "./Frontend/components/Home/Footer";
 import MiniNavBar from "./Frontend/components/Home/Mininavbar";
 import Workspace from "./Frontend/components/Dashboard/Workspace";
 import Dashboard from "./Frontend/components/Dashboard/Dashboard";
+import RecycleBin from "./Frontend/components/Dashboard/RecycleBin";
 function App() {
   return (
     <BrowserRouter>
@@ -42,18 +42,6 @@ function App() {
             </>
           }
         />
-        
-        {/* <Route
-          path="/PaymentHistory"
-          element={
-            <>
-              <MiniNavBar />
-              <PaymentHistory />
-              <Sidebar />
-              <Footer />
-            </> 
-          }
-        />*/}
         <Route
           path="/Workspace"
           element={
@@ -71,6 +59,17 @@ function App() {
             <>
               <MiniNavBar />
               <Dashboard />
+              <Sidebar />
+              <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/RecycleBin"
+          element={
+            <>
+              <MiniNavBar />
+              <RecycleBin />
               <Sidebar />
               <Footer />
             </>

@@ -6,6 +6,8 @@ import {
   listDocumentsInWorkspace,
   downloadDocument,
   previewDocument,
+  updateDocumentMetadata,
+  getDocumentMetadata,
 } from "../controller/documentController.js";
 
 import { auth } from "../Middleware/authMiddleware.js"; // Assuming you have auth middleware
@@ -29,5 +31,9 @@ router.get("/download/:id", auth, downloadDocument);
 
 // Preview a document
 router.get("/preview/:id", auth, previewDocument);
+
+router.put("/documents/:id/metadata", updateDocumentMetadata);
+
+router.get("/documents/:id/metadata", getDocumentMetadata);
 
 export default router;

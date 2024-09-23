@@ -52,7 +52,7 @@ export const uploadDocument = async (req, res) => {
   }
 };
 
-// PUT /api/documents/:id/soft-delete
+// Soft delete with permission checks
 export const softDeleteDocument = async (req, res) => {
   try {
     const document = await Document.findById(req.params.id);
@@ -84,7 +84,7 @@ export const softDeleteDocument = async (req, res) => {
   }
 };
 
-// PUT /api/documents/:id/restore
+// Restore document with permission checks
 export const restoreDocument = async (req, res) => {
   try {
     const document = await Document.findById(req.params.id);
@@ -114,6 +114,7 @@ export const restoreDocument = async (req, res) => {
       .json({ message: "Document restoration failed", error });
   }
 };
+
 
 // GET /api/documents/:workspaceId/documents
 export const listDocumentsInWorkspace = async (req, res) => {
@@ -231,3 +232,40 @@ export const previewDocument = async (req, res) => {
     return res.status(500).json({ message: "Document preview failed", error });
   }
 };
+
+
+
+export const updateDocumentMetadata = async (req, res) => {
+  try {
+    const document = await Document.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    });
+    res.json(document);
+  } catch (err) {
+    res.status(500).json({ error: "Error updating metadata" });
+  }
+};
+
+export const getDocumentMetadata = async (req, res) => {
+  try {
+    const document = await Document.findById(req.params.id);
+    res.json(document);
+  } catch (err) {
+    res.status(500).json({ error: "Error fetching metadata" });
+  }
+};
+
+export const updateDocumentTags = async (req, res) => {
+  try {
+    const { tags } = req.body;
+    const document = await Document.findByIdAndUpdate(
+      req.params.id,
+      { tags },
+      { new: true }
+    );
+    res.json(document);
+  } catch (err) {
+    res.status(500).json({ error: "Error updating tags" });
+  }
+};
+
