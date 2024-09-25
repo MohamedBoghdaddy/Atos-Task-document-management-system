@@ -244,7 +244,72 @@ body {
   font-size: 16px;
 }
 
+@media only screen and (max-width: 1024px) {
+  .login-container,
+  .signup-container {
+    flex-direction: column;
+    width: 100%;
+  }
 
+  .left-login,
+  .right-login,
+  .left-signup,
+  .right-signup {
+    padding: 20px;
+    flex-direction: column;
+  }
+
+  .right-login h1,
+  .right-signup h1,
+  .left-login h2,
+  .left-signup h2 {
+    font-size: 30px;
+    text-align: center;
+  }
+}
+
+/* Mobile optimization */
+@media only screen and (max-width: 768px) {
+  .login-container,
+  .signup-container {
+    flex-direction: column;
+    width: 90%;
+    max-width: 100%;
+  }
+
+  .left-login,
+  .right-login,
+  .left-signup,
+  .right-signup {
+    padding: 15px;
+    flex-direction: column;
+  }
+
+  .right-login h1,
+  .right-signup h1,
+  .left-login h2,
+  .left-signup h2 {
+    font-size: 28px;
+    text-align: center;
+  }
+
+  .field label {
+    font-size: 14px;
+  }
+
+  .field input {
+    font-size: 14px;
+  }
+
+  .green_btn,
+  .white_btn,
+  .left_btn,
+  .right_btn {
+    width: 150px;
+    font-size: 12px;
+    padding: 10px;
+  }
+}
 
 @media only screen and (max-width: 760px) {
   .login-container,

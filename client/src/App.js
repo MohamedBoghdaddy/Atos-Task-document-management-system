@@ -10,6 +10,9 @@ import MiniNavBar from "./Frontend/components/Home/Mininavbar";
 import Workspace from "./Frontend/components/Dashboard/Workspace";
 import Dashboard from "./Frontend/components/Dashboard/Dashboard";
 import RecycleBin from "./Frontend/components/Dashboard/RecycleBin";
+import Setting from "./Frontend/components/Dashboard/Setting";
+import Analytics from "./Frontend/components/Dashboard/Analytics";
+
 function App() {
   return (
     <BrowserRouter>
@@ -70,6 +73,28 @@ function App() {
             <>
               <MiniNavBar />
               <RecycleBin />
+              <Sidebar />
+              <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/Setting"
+          element={
+            <>
+              <MiniNavBar />
+              <Setting />
+              <Sidebar />
+              <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/Analytics"
+          element={
+            <>
+              <MiniNavBar />
+              <Analytics />
               <Sidebar />
               <Footer />
             </>

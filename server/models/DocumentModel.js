@@ -16,13 +16,14 @@ const documentSchema = new mongoose.Schema({
   version: {
     type: Number,
     default: 1,
-  }, 
-  previousVersions: [
-   
+  },
+  versions: [
     {
       versionNumber: Number,
-      documentContent: String, 
-      updatedAt: Date,
+      content: String,
+      timestamp: Date,
+      modifiedBy: String,
+      metadata: String,
     },
   ],
   owner: {
@@ -53,11 +54,13 @@ const documentSchema = new mongoose.Schema({
 });
 
 documentSchema.pre("save", function (next) {
-  if (this.isModified("content")) {
-    this.previousVersions.push({
+  if (this.isModified("url") || this.isModified("name")) {
+    // Track content changes, you can modify this to track other fields if necessary
+    this.versions.push({
       versionNumber: this.version,
-      documentContent: this.content, // Track current content
-      updatedAt: new Date(),
+      content: this.url, // Assuming `url` represents the content you want to version
+      timestamp: new Date(),
+      modifiedBy: this.owner.toString(), // Track who modified it
     });
     this.version += 1; // Increment the version number for new changes
   }

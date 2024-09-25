@@ -23,6 +23,16 @@ const workspaceSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  collaborators: [
+    {
+      collaboratorId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      role: {
+        type: String,
+        enum: ["Viewer", "Editor", "Admin"],
+        default: "Viewer",
+      },
+    },
+  ],
 });
 
 const Workspace = mongoose.model("Workspace", workspaceSchema);

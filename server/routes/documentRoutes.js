@@ -1,42 +1,32 @@
 import express from "express";
+import multer from "multer";
 import {
   uploadDocument,
-  softDeleteDocument,
-  restoreDocument,
-  listDocumentsInWorkspace,
   downloadDocument,
+  softDeleteDocument,
   previewDocument,
-  updateDocumentMetadata,
-  getDocumentMetadata,
+  listDocumentsInWorkspace,
   listDocumentsInRecycleBin,
-
+  restoreDocument,
+  updateDocumentMetadata,
+  updateDocumentTags,
+  searchDocuments,
 } from "../controller/documentController.js";
-
-import { auth } from "../Middleware/authMiddleware.js"; // Assuming you have auth middleware
+import { auth } from "../Middleware/authMiddleware.js";
 
 const router = express.Router();
+const upload = multer({ dest: "uploads/" });
 
-// Upload document
-router.post("/upload", auth, uploadDocument);
+router.post("/upload", auth, upload.single("document"), uploadDocument);
+router.put("/:id/soft-delete", auth, softDeleteDocument); 
+router.put("/:documentId/restore", auth, restoreDocument); 
+router.get("/:workspaceId/documents", auth, listDocumentsInWorkspace); 
+router.get("/download/:id", auth, downloadDocument); 
+router.get("/preview/:id", auth, previewDocument); 
+router.put("/:id/metadata", auth, updateDocumentMetadata); 
+router.put("/:id/tags", auth, updateDocumentTags); 
+router.get("/:workspaceId/recycle-bin", auth, listDocumentsInRecycleBin); 
+router.get("/search", auth, searchDocuments);
 
-// Soft delete document (move to recycle bin)
-router.put("/:id/soft-delete", auth, softDeleteDocument);
-
-// Restore document from recycle bin
-router.put("/:id/restore", auth, restoreDocument);
-
-// List documents in a workspace
-router.get("/:workspaceId/documents", auth, listDocumentsInWorkspace);
-router.get("/:workspaceId/recycle-bin", auth, listDocumentsInRecycleBin);
-
-// Download a document
-router.get("/download/:id", auth, downloadDocument);
-
-// Preview a document
-router.get("/preview/:id", auth, previewDocument);
-
-router.put("/documents/:id/metadata", updateDocumentMetadata);
-
-router.get("/documents/:id/metadata", getDocumentMetadata);
 
 export default router;

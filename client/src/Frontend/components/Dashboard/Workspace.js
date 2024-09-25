@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Button, Form, Table, Modal } from "react-bootstrap";
+import { Button, Form, Table, Modal, Pagination } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faUpload,
@@ -8,7 +8,6 @@ import {
   faEye,
   faDownload,
   faTimesCircle,
-  faRecycle,
   faEdit,
 } from "@fortawesome/free-solid-svg-icons";
 import Notification from "../Dashboard/Notification";
@@ -35,7 +34,6 @@ const Workspace = () => {
     documents,
     showPreviewModal,
     setShowPreviewModal,
-    recycleBin, // For recycle bin
   } = useContext(DashboardContext);
 
   const [selectedWorkspace, setSelectedWorkspace] = useState(null);
@@ -58,17 +56,19 @@ const Workspace = () => {
   const [previewFile, setPreviewFile] = useState(""); // Track the file content
   const [mimeType, setMimeType] = useState(""); // Track MIME type for document preview
   const [downloadFileName, setDownloadFileName] = useState("");
-
-  // Fetch workspaces for the logged-in user
+  const [currentPage, setCurrentPage] = useState(1);
+  const [documentsPerPage] = useState(3);
+  // Fetch workspaces on component mount and when user changes
   useEffect(() => {
     fetchWorkspaces();
     if (user && user._id) {
       fetchWorkspacesByUserId(user._id);
     }
-  }, [fetchWorkspaces, user, fetchWorkspacesByUserId]);
+  }, [user, fetchWorkspaces, fetchWorkspacesByUserId]);
 
+  // Filter documents on search term change
   useEffect(() => {
-    if (searchTerm.length >= 3) {
+    if (searchTerm.length) {
       const filtered = documents.filter((doc) =>
         doc.name.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -78,31 +78,32 @@ const Workspace = () => {
     }
   }, [searchTerm, documents]);
 
+  const handleWorkspaceSelection = (workspace) => {
+    setSelectedWorkspace(workspace);
+    fetchDocuments(workspace._id);
+  };
+
   const handleWorkspaceCreation = async (event) => {
     event.preventDefault();
-    const workspaceData = {
-      name: workspaceName,
-      description: workspaceDescription,
-      visibility: workspaceVisibility,
-    };
-
     try {
-      await createWorkspace(workspaceData);
+      await createWorkspace({
+        name: workspaceName,
+        description: workspaceDescription,
+        visibility: workspaceVisibility,
+      });
+      fetchWorkspaces(); // Refresh workspaces list
+      setShowWorkspaceModal(false); // Close the modal on success
       setNotification({
         type: "success",
         message: "Workspace created successfully!",
       });
-      setShowWorkspaceModal(false);
-      fetchWorkspaces();
     } catch (error) {
       console.error("Error creating workspace:", error);
-      setNotification({ type: "error", message: "Workspace creation failed!" });
+      setNotification({
+        type: "error",
+        message: "Failed to create workspace.",
+      });
     }
-  };
-
-  const handleWorkspaceSelection = (workspace) => {
-    setSelectedWorkspace(workspace);
-    fetchDocuments(workspace._id);
   };
 
   const handleFileUpload = async (event) => {
@@ -191,94 +192,115 @@ const Workspace = () => {
     }
   };
 
+  const pageCount = Math.ceil(documents.length / documentsPerPage);
+  let items = [];
+  for (let number = 1; number <= pageCount; number++) {
+    items.push(
+      <Pagination.Item
+        key={number}
+        active={number === currentPage}
+        onClick={() => setCurrentPage(number)}
+      >
+        {number}
+      </Pagination.Item>
+    );
+  }
+
+  // Calculate the current documents to display
+  const indexOfLastDocument = currentPage * documentsPerPage;
+  const indexOfFirstDocument = indexOfLastDocument - documentsPerPage;
+  const currentDocuments = documents.slice(
+    indexOfFirstDocument,
+    indexOfLastDocument
+  );
+
   return (
     <div className="workspace-container">
       {/* Add Notification component */}
       {notification && (
         <Notification type={notification.type} message={notification.message} />
       )}
+      <div className="workspace-creation">
+        <Button
+          variant="primary"
+          onClick={() => setShowWorkspaceModal(true)}
+          className="mb-3"
+        >
+          Create Workspace
+        </Button>
 
-      {/* Workspace creation and selection */}
-      <Button
-        variant="primary"
-        onClick={() => setShowWorkspaceModal(true)}
-        className="mb-3"
-      >
-        Create Workspace
-      </Button>
-
-      <Modal
-        show={showWorkspaceModal}
-        onHide={() => setShowWorkspaceModal(false)}
-        centered
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Create Workspace</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form onSubmit={handleWorkspaceCreation}>
-            <Form.Group controlId="workspaceName" className="mb-3">
-              <Form.Label>Workspace Name</Form.Label>
-              <Form.Control
-                type="text"
-                value={workspaceName}
-                onChange={(e) => setWorkspaceName(e.target.value)}
-                required
-              />
-            </Form.Group>
-            <Form.Group controlId="workspaceDescription" className="mb-3">
-              <Form.Label>Workspace Description</Form.Label>
-              <Form.Control
-                type="text"
-                value={workspaceDescription}
-                onChange={(e) => setWorkspaceDescription(e.target.value)}
-              />
-            </Form.Group>
-            <Form.Group controlId="workspaceVisibility" className="mb-3">
-              <Form.Label>Visibility</Form.Label>
-              <Form.Control
-                as="select"
-                value={workspaceVisibility}
-                onChange={(e) => setWorkspaceVisibility(e.target.value)}
-              >
-                <option value="private">Private</option>
-                <option value="public">Public</option>
-              </Form.Control>
-            </Form.Group>
-            <Button variant="primary" type="submit">
-              Create Workspace
-            </Button>
-          </Form>
-        </Modal.Body>
-      </Modal>
-
-      {/* Workspace selection */}
-      <h3>Select a Workspace</h3>
-      {workspaces.length > 0 ? (
-        <div className="workspace-list">
-          {workspaces.map((workspace) => (
-            <div
-              key={workspace._id}
-              onClick={() => handleWorkspaceSelection(workspace)}
-              className={`workspace-item ${
-                selectedWorkspace?._id === workspace._id ? "selected" : ""
-              }`}
-            >
-              {workspace.name}
-              <Button
-                variant="danger"
-                className="ms-4"
-                onClick={() => deleteWorkspace(workspace._id)}
-              >
-                <FontAwesomeIcon icon={faTimesCircle} />
+        <Modal
+          show={showWorkspaceModal}
+          onHide={() => setShowWorkspaceModal(false)}
+          centered
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>Create Workspace</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Form onSubmit={handleWorkspaceCreation}>
+              <Form.Group controlId="workspaceName" className="mb-3">
+                <Form.Label>Workspace Name</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={workspaceName}
+                  onChange={(e) => setWorkspaceName(e.target.value)}
+                  required
+                />
+              </Form.Group>
+              <Form.Group controlId="workspaceDescription" className="mb-3">
+                <Form.Label>Workspace Description</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={workspaceDescription}
+                  onChange={(e) => setWorkspaceDescription(e.target.value)}
+                />
+              </Form.Group>
+              <Form.Group controlId="workspaceVisibility" className="mb-3">
+                <Form.Label>Visibility</Form.Label>
+                <Form.Control
+                  as="select"
+                  value={workspaceVisibility}
+                  onChange={(e) => setWorkspaceVisibility(e.target.value)}
+                >
+                  <option value="private">Private</option>
+                  <option value="public">Public</option>
+                </Form.Control>
+              </Form.Group>
+              <Button variant="primary" type="submit">
+                Create Workspace
               </Button>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p>No workspaces available.</p>
-      )}
+            </Form>
+          </Modal.Body>
+        </Modal>
 
+        {/* Workspace selection */}
+        <h3>Select a Workspace</h3>
+        {Array.isArray(workspaces) && workspaces.length > 0 ? (
+          <div className="workspace-list">
+            {workspaces.map((workspace) => (
+              <div
+                key={workspace._id}
+                onClick={() => handleWorkspaceSelection(workspace)}
+                className={`workspace-item ${
+                  selectedWorkspace?._id === workspace._id ? "selected" : ""
+                }`}
+              >
+                {workspace.name}
+                <Button
+                  variant="danger"
+                  className="ms-4"
+                  onClick={() => deleteWorkspace(workspace._id)}
+                >
+                  <FontAwesomeIcon icon={faTimesCircle} />
+                </Button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p>No workspaces available.</p>
+        )}
+      </div>
       {/* Documents list */}
       {selectedWorkspace && (
         <>
@@ -319,16 +341,16 @@ const Workspace = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredDocuments.map((document) => (
+              {currentDocuments.map((document) => (
                 <tr key={document._id}>
                   <td>{document.name}</td>
                   <td>
                     <Button
                       variant="info"
-                      onClick={() => handlePreviewDocument(document._id)}
+                      onClick={() => previewDocument(document._id)}
                       className="me-3"
                     >
-                      <FontAwesomeIcon icon={faEye} /> 
+                      <FontAwesomeIcon icon={faEye} />
                     </Button>
                     <Button
                       variant="success"
@@ -337,18 +359,18 @@ const Workspace = () => {
                       }
                       className="me-3"
                     >
-                      <FontAwesomeIcon icon={faDownload} /> 
+                      <FontAwesomeIcon icon={faDownload} />
                     </Button>
                     <Button
                       variant="danger"
                       onClick={() => deleteDocument(document._id)}
                       className="me-3"
                     >
-                      <FontAwesomeIcon icon={faTrash} /> 
+                      <FontAwesomeIcon icon={faTrash} />
                     </Button>
                     <Button
                       variant="secondary"
-                      onClick={() => handleMetadataModal(document)}
+                      onClick={() => updateDocumentMetadata(document)}
                       className="me-3"
                     >
                       <FontAwesomeIcon icon={faEdit} /> Edit Metadata/Tags
@@ -358,6 +380,7 @@ const Workspace = () => {
               ))}
             </tbody>
           </Table>
+          <Pagination>{items}</Pagination>
 
           {/* Metadata and Tags Modal */}
           <Modal

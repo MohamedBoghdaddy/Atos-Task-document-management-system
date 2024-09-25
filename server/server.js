@@ -13,7 +13,7 @@ import userRoutes from "./routes/userroutes.js";
 import workspaceRoutes from "./routes/workspaceRoutes.js";
 import documentRoutes from "./routes/documentRoutes.js";
 import User from "./models/UserModel.js";
-
+import analyticRoutes from "./routes/analyticRoutes.js";
 // Resolving __dirname for ES Module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -54,13 +54,19 @@ store.on("error", (error) => {
   console.error("MongoDB session store error:", error);
 });
 
-app.use(
-  cors({
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
-  })
-);
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (/^http:\/\/localhost:\d+$/.test(origin) || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 
 const createToken = (_id, res) => {
   const token = jwt.sign({ _id }, JWT_SECRET, {
@@ -96,17 +102,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-
-
 app.use("/api/users", userRoutes);
 app.use("/api/workspaces", workspaceRoutes);
 app.use("/api/documents", documentRoutes);
-
+app.use("/api/analytic", analyticRoutes);
+analyticRoutes;
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send("Something went wrong!");
 });
-
 
 // Serve the client app
 app.use(express.static(path.join(__dirname, "../client/build")));

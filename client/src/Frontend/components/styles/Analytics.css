@@ -1,0 +1,17 @@
+.analytics-container {
+  padding: 20px;
+  background-color: #f7f9fb;
+  border-radius: 8px;
+  margin-top: 50px;
+}
+
+.chart-container {
+  margin-bottom: 30px;
+}
+
+.centered-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}

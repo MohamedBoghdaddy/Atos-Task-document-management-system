@@ -1,18 +1,11 @@
-.page-content {
-  padding: 20px;
-  background-color: #e9ecef;
-}
-
-.page-content h1 {
-  font-size: 24px;
-  margin-bottom: 20px;
-}
-
-.job-applied-chart {
-  background-color: #fff;
+.dashboard{
+    padding: 20px;
+  background-color: #f7f9fb; /* Light background color */
   border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin: 20px auto;
+  max-width: 1000px;
+  margin-left: 30%;
 }
 
 

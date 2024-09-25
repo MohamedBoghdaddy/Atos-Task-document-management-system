@@ -221,3 +221,23 @@ export const checkAuth = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+export const searchUsersByUsername = async (req, res) => {
+  const { username } = req.query;
+  if (!username) {
+    return res.status(400).json({ message: "Username is required for search" });
+  }
+
+  try {
+    const users = await User.find({
+      username: { $regex: username, $options: "i" },
+    });
+    if (users.length === 0) {
+      return res.status(404).json({ message: "No users found" });
+    }
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Error searching users:", error);
+    res.status(500).json({ message: "Error searching users", error });
+  }
+};

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Button, Table, Spinner } from "react-bootstrap";
+import { Button, Table, Spinner, Form } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faRecycle, faTrash } from "@fortawesome/free-solid-svg-icons";
 import Notification from "../Dashboard/Notification";
@@ -12,15 +12,42 @@ const RecycleBin = () => {
     restoreDocument,
     deleteDocument,
     recycleBin,
+    selectedWorkspace, 
+    fetchWorkspaces, 
+    workspaces, 
+    setSelectedWorkspace, 
   } = useContext(DashboardContext);
+
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState(null);
+  const [workspaceId, setWorkspaceId] = useState("");
 
   useEffect(() => {
-    const loadData = async () => {
+    const loadWorkspaces = async () => {
       setLoading(true);
       try {
-        await fetchDocumentsinRecycleBin();
+        await fetchWorkspaces();
+      } catch (error) {
+        console.error("Error fetching workspaces:", error);
+        setNotification({
+          type: "error",
+          message: "Failed to load workspaces.",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadWorkspaces();
+  }, [fetchWorkspaces]);
+
+  useEffect(() => {
+    const loadRecycleBinData = async () => {
+      if (!workspaceId) return; 
+
+      setLoading(true);
+      try {
+        await fetchDocumentsinRecycleBin(workspaceId); 
       } catch (error) {
         console.error("Error fetching recycled documents:", error);
         setNotification({
@@ -32,8 +59,17 @@ const RecycleBin = () => {
       }
     };
 
-    loadData();
-  }, [fetchDocumentsinRecycleBin]);
+    if (workspaceId) {
+      loadRecycleBinData(); 
+    }
+  }, [workspaceId, fetchDocumentsinRecycleBin]);
+
+  // Handle workspace change
+  const handleWorkspaceChange = (e) => {
+    const selectedWorkspaceId = e.target.value;
+    setWorkspaceId(selectedWorkspaceId); // Update the selected workspace ID
+    setSelectedWorkspace(selectedWorkspaceId); // Set the selected workspace in DashboardContext
+  };
 
   const handleRestore = async (documentId) => {
     try {
@@ -85,7 +121,25 @@ const RecycleBin = () => {
             />
           )}
 
-          {Array.isArray(recycleBin) && recycleBin.length > 0 ? ( // Check if recycleBin is an array and has items
+          <Form.Group controlId="workspaceSelect" className="mb-3">
+            <Form.Label>Select Workspace</Form.Label>
+            <Form.Control
+              as="select"
+              value={workspaceId}
+              onChange={handleWorkspaceChange}
+            >
+              <option value="" disabled>
+                Select a workspace
+              </option>
+              {workspaces.map((workspace) => (
+                <option key={workspace._id} value={workspace._id}>
+                  {workspace.name}
+                </option>
+              ))}
+            </Form.Control>
+          </Form.Group>
+
+          {Array.isArray(recycleBin) && recycleBin.length > 0 ? (
             <Table striped bordered hover>
               <thead>
                 <tr>

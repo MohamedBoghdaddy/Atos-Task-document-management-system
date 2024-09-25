@@ -148,3 +148,43 @@ export const deleteWorkspace = async (req, res) => {
       .json({ message: "Workspace deletion failed", error });
   }
 };
+
+export const addCollaboratorToWorkspace = async (req, res) => {
+  const { collaboratorId } = req.body;
+  const { workspaceId } = req.params;
+
+  try {
+    const workspace = await Workspace.findById(workspaceId);
+    if (!workspace) {
+      return res.status(404).json({ message: "Workspace not found" });
+    }
+
+   console.log("Workspace Owner ID:", workspace.user.toString());
+   console.log("Current User ID:", req.user._id.toString());
+
+  if (workspace.user.toString() !== req.user._id.toString()) {
+    return res
+      .status(403)
+      .json({
+        message:
+          "You are not authorized to add collaborators to this workspace",
+      });
+  }
+
+
+    if (workspace.collaborators.includes(collaboratorId)) {
+      return res
+        .status(400)
+        .json({ message: "Collaborator already exists in this workspace" });
+    }
+
+    workspace.collaborators.push(collaboratorId);
+    await workspace.save();
+    return res.status(200).json({ message: "Collaborator added successfully" });
+  } catch (error) {
+    console.error("Error adding collaborator:", error);
+    res
+      .status(500)
+      .json({ message: "Failed to add collaborator", error: error.message });
+  }
+};

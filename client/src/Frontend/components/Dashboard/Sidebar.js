@@ -19,8 +19,8 @@ const Sidebar = () => {
       </div>
       <ul className="sidebar-menu">
         <li>
-          <Link to="/Dashboard">
-            <FaUser /> Dashboard
+          <Link to="/analytics">
+            <FaUser /> Analytics
           </Link>
         </li>
         <li>
@@ -35,7 +35,7 @@ const Sidebar = () => {
         </li>
 
         <li>
-          <Link to="/settings">
+          <Link to="/setting">
             <FaCog /> Settings
           </Link>
         </li>

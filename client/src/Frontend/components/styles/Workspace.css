@@ -1,6 +1,4 @@
-/* Workspace.css */
-
-/* Container Styles */
+/* General Container Styles */
 .workspace-container {
   padding: 20px;
   background-color: #f7f9fb; /* Light background color */
@@ -8,8 +6,11 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin: 20px auto;
   max-width: 1000px;
-  margin-left:20%;
+  margin-left: 20%;
+}
 
+.workspace-creation {
+  margin-top: 5%;
 }
 
 .workspace-container h2 {
@@ -38,9 +39,10 @@
   background-color: #2ea44f; /* GitHub's green button color */
   color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: 100px;
   cursor: pointer;
   transition: background-color 0.3s ease;
+
 }
 
 .workspace-container button:hover {
@@ -106,7 +108,7 @@
   background-color: #d73a49; /* Red color for danger actions */
   color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
 }
 
 .workspace-container .btn-danger:hover {
@@ -130,6 +132,7 @@
 .workspace-container .modal-footer {
   border-top: 1px solid #e1e4e8;
 }
+
 /* Workspace List Styles */
 .workspace-list {
   display: grid;
@@ -137,7 +140,6 @@
   gap: 10px;
   margin-bottom: 20px;
 }
-
 
 .workspace-item {
   background-color: #fff;
@@ -160,6 +162,7 @@
   border-color: #0366d6;
 }
 
+/* Search Bar */
 .search-bar {
   display: flex;
   align-items: center;
@@ -180,6 +183,7 @@
   font-size: 16px;
   color: #ccc;
 }
+
 /* Add preview hover effect */
 .document-preview-container {
   position: relative;
@@ -202,31 +206,53 @@
   opacity: 1;
 }
 
-.ms-3{
-  color:black;
+/* Mobile and Tablet Optimization */
+@media (max-width: 1024px) {
+  .workspace-container {
+    margin-left: 5%;
+    max-width: 90%;
+    padding: 15px;
+      margin-left: 40%;
+
+  }
+.workspace-creation{
+  margin-top: 25%;
+}
+  .workspace-list {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  }
+
+  .workspace-item {
+    padding: 10px;
+  }
 }
 
-/* Responsive Styles */
 @media (max-width: 768px) {
   .workspace-container {
-    padding: 15px;
-    margin: 10px;
-      margin-left:30%;
+    margin-left: 0;
+    padding: 10px;
+    max-width: 100%;
+          margin-left: 40%;
 
   }
-
-  .workspace-container h2 {
-    font-size: 24px;
-  }
-
-  .workspace-container button {
-    padding: 8px 16px;
+.workspace-creation{
+  margin-top: 25%;
+}
+  .workspace-item {
     font-size: 14px;
   }
 
-  .workspace-container table th,
-  .workspace-container table td {
-    padding: 8px 10px;
-    font-size: 14px;
+  .workspace-item button {
+    width: 50%;
+    margin-top: 10px;
+  }
+
+  .search-bar {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .search-bar input {
+    width: 100%;
   }
 }
