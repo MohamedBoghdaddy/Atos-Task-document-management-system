@@ -55,17 +55,19 @@ const documentSchema = new mongoose.Schema({
 
 documentSchema.pre("save", function (next) {
   if (this.isModified("url") || this.isModified("name")) {
-    // Track content changes, you can modify this to track other fields if necessary
     this.versions.push({
       versionNumber: this.version,
-      content: this.url, // Assuming `url` represents the content you want to version
+      content: this.url,
       timestamp: new Date(),
-      modifiedBy: this.owner.toString(), // Track who modified it
+      modifiedBy: this.owner ? this.owner.toString() : "Unknown", // Use `owner`
     });
-    this.version += 1; // Increment the version number for new changes
+    this.version += 1;
   }
   next();
 });
 
-const Document = mongoose.model("Document", documentSchema);
+// Check if the model exists before defining it again
+const Document =
+  mongoose.models.Document || mongoose.model("Document", documentSchema);
+
 export default Document;

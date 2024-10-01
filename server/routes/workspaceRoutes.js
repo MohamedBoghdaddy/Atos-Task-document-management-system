@@ -4,9 +4,10 @@ import {
   getWorkspaceById,
   updateWorkspace,
   deleteWorkspace,
-  getAllWorkspaces,
+  getAllPublicWorkspaces,
   getWorkspacesByUser,
-  addCollaboratorToWorkspace,
+  addCollaborator,
+  fetchCollaborators,
 } from "../controller/workspaceController.js";
 import { auth } from "../Middleware/authMiddleware.js";
 
@@ -15,9 +16,10 @@ const router = express.Router();
 router.post("/createWorkspace", auth, createWorkspace);
 router.get("/getWorkspaceById", auth, getWorkspaceById);
 router.put("/updateWorkspace", auth, updateWorkspace);
-router.delete("/deleteWorkspace", auth, deleteWorkspace);
-router.get("/getAllWorkspaces", auth, getAllWorkspaces);
-router.get("/getWorkspacesByUser/:userId", auth, getWorkspacesByUser);
-router.post("/:workspaceId/add-collaborator", auth, addCollaboratorToWorkspace);
+router.delete("/deleteWorkspace/:id", auth, deleteWorkspace);
+router.get("/:userId", auth, getWorkspacesByUser);
+router.post("/:workspaceId/add-collaborator", auth, addCollaborator);
+router.get("/:workspaceId/collaborators", auth, fetchCollaborators);
+router.get("/search", getAllPublicWorkspaces);
 
 export default router;

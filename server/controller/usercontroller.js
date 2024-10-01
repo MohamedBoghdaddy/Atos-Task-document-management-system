@@ -38,7 +38,7 @@ export const register = async (req, res) => {
     username,
     email,
     password,
-    nid, // Ensure this matches your frontend and schema
+    nid, 
     firstName,
     middleName,
     lastName,
@@ -46,7 +46,6 @@ export const register = async (req, res) => {
   } = req.body;
 
   try {
-    // Check if the user already exists
     const existingUser = await User.findOne({ email });
 
     if (existingUser) {
@@ -55,10 +54,8 @@ export const register = async (req, res) => {
         .json({ message: "User with this email already exists" });
     }
 
-    // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create the user
     const user = new User({
       username,
       email,
@@ -72,10 +69,8 @@ export const register = async (req, res) => {
 
     await user.save();
 
-    // Generate JWT token
     const token = createToken(user);
 
-    // Send back the token and the user details, excluding the password
     res.status(201).json({
       token,
       user: {
@@ -98,7 +93,6 @@ export const register = async (req, res) => {
   }
 };
 
-// User login
 export const login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -118,15 +112,11 @@ export const login = async (req, res) => {
 
     const token = createToken(user);
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-    });
+
 
     res.status(200).json({
       token,
-      user: { username: user.username, email, role: user.role },
+      user: { _id: user._id, username: user.username, email: user.email },
     });
     console.log(`Login successful for user: ${user.username}`);
   } catch (error) {
@@ -135,7 +125,6 @@ export const login = async (req, res) => {
   }
 };
 
-// User logout
 export const logoutUser = async (req, res) => {
   try {
     res.status(200).json({ message: "Logout successful" });
@@ -146,7 +135,6 @@ export const logoutUser = async (req, res) => {
 };
 
 
-// Get user data
 export const getUser = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -159,7 +147,6 @@ export const getUser = async (req, res) => {
   }
 };
 
-// Update user data including CV and Photo
 export const updateUser = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -191,7 +178,6 @@ export const updateUser = async (req, res) => {
   }
 };
 
-// Delete user
 export const deleteUser = async (req, res) => {
   const { userId } = req.params;
 
@@ -206,7 +192,6 @@ export const deleteUser = async (req, res) => {
   }
 };
 
-// Check authentication status
 export const checkAuth = async (req, res) => {
   try {
     const token = req.cookies.token;
@@ -241,3 +226,30 @@ export const searchUsersByUsername = async (req, res) => {
     res.status(500).json({ message: "Error searching users", error });
   }
 };
+
+export const fetchCollaborators = async (req, res) => {
+  try {
+    const { workspaceId } = req.params;
+
+    if (!workspaceId || !mongoose.Types.ObjectId.isValid(workspaceId)) {
+      return res.status(400).json({ message: "Invalid workspace ID" });
+    }
+
+    const workspace = await Workspace.findById(workspaceId).populate({
+      path: "collaborators", 
+      select: "username email", 
+    });
+
+    if (!workspace) {
+      return res.status(404).json({ message: "Workspace not found" });
+    }
+
+    res.status(200).json(workspace.collaborators);
+  } catch (error) {
+    console.error("Error fetching collaborators:", error);
+    res
+      .status(500)
+      .json({ message: "Failed to fetch collaborators", error: error.message });
+  }
+};
+

@@ -106,6 +106,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/workspaces", workspaceRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/analytic", analyticRoutes);
+
 analyticRoutes;
 app.use((err, req, res, next) => {
   console.error(err.stack);

@@ -1,44 +1,63 @@
 import React, { useState, useEffect, useContext } from "react";
 import { Button, Form, Table } from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faSearch,
-  faEye,
-  faTimesCircle,
-} from "@fortawesome/free-solid-svg-icons";
+import { faSearch } from "@fortawesome/free-solid-svg-icons";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Notification from "../Dashboard/Notification";
 import { DashboardContext } from "../../../context/DashboardContext";
 import { useAuthContext } from "../../../context/AuthContext";
 import axios from "axios";
+import { useParams } from "react-router-dom";
 
 const Setting = () => {
   const { user } = useAuthContext();
   const {
-    fetchWorkspaces,
     fetchWorkspacesByUserId,
-    fetchWorkspaceById,
     fetchDocuments,
-    workspaces,
+    addCollaboratorToWorkspace,
     documents,
-    deleteWorkspace,
-    handlePreviewDocument,
+    workspaces,
+    selectedWorkspace,
+    setSelectedWorkspace,
+    fetchCollaborators,
   } = useContext(DashboardContext);
 
-  const [selectedWorkspace, setSelectedWorkspace] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [collaboratorSearch, setCollaboratorSearch] = useState("");
   const [collaborators, setCollaborators] = useState([]);
   const [notification, setNotification] = useState(null);
   const [filteredDocuments, setFilteredDocuments] = useState([]);
-  const [selectedDocument, setSelectedDocument] = useState(null);
+  const [selectedRole, setSelectedRole] = useState("Viewer");
+  const { workspaceId } = useParams();
 
+  // Notify example function
+  const handleNotification = () => {
+    toast.success("Success message!");
+  };
+
+  // Fetch workspaces and collaborators on component mount
   useEffect(() => {
-    fetchWorkspaces();
-    if (user && user._id) {
+    if (user?.id) {
       fetchWorkspacesByUserId(user._id);
     }
-  }, [user, fetchWorkspacesByUserId, fetchWorkspaces]);
+    if (workspaceId && fetchCollaborators) {
+      fetchCollaborators(workspaceId)
+        .then((collaborators) => {
+          if (collaborators.length === 0) {
+            toast.info("No collaborators found for this workspace.");
+          } else {
+            setCollaborators(collaborators);
+          }
+        })
+        .catch((error) => {
+          toast.error("Error fetching collaborators.");
+          console.error("Error fetching collaborators:", error);
+        });
+    }
+  }, [user, workspaceId, fetchWorkspacesByUserId, fetchCollaborators]);
 
+  // Filter documents based on search term
   useEffect(() => {
     if (searchTerm.length >= 3) {
       const filtered = documents.filter((doc) =>
@@ -50,71 +69,69 @@ const Setting = () => {
     }
   }, [searchTerm, documents]);
 
+  // Handle workspace selection
   const handleWorkspaceSelection = (workspace) => {
     setSelectedWorkspace(workspace);
     fetchDocuments(workspace._id);
+    handleFetchCollaborators(workspace._id);
   };
 
-  const handleSearch = (event) => {
-    setSearchTerm(event.target.value);
-  };
-
+  // Search collaborators based on username
   const handleCollaboratorSearch = async () => {
     try {
       const response = await axios.get(
         `http://localhost:4000/api/users/search?username=${collaboratorSearch}`
       );
-      setCollaborators(response.data);
-      console.log(response.data);
-      console.log(collaborators);
+      setCollaborators(response.data || []);
     } catch (error) {
-      console.error("Error fetching collaborators:", error);
-      setNotification({
-        type: "error",
-        message: "Error fetching collaborators.",
-      });
+      toast.error("Error fetching collaborators.");
     }
   };
 
-  const addCollaboratorToWorkspace = async (collaborator) => {
-    if (!selectedWorkspace || !selectedWorkspace._id) {
-      setNotification({ type: "error", message: "No workspace selected!" });
-      return;
-    }
+  // Fetch collaborators for a workspace
+  const handleFetchCollaborators = async (workspaceId) => {
+    try {
+      // Ensure workspaceId is valid
+      if (!workspaceId || !workspaceId.match(/^[0-9a-fA-F]{24}$/)) {
+        throw new Error("Invalid workspace ID");
+      }
 
+      const response = await axios.get(
+        `http://localhost:4000/api/workspaces/${workspaceId}/collaborators`,
+        { withCredentials: true }
+      );
+      if (response.data && Array.isArray(response.data)) {
+        if (response.data.length === 0) {
+          toast.info("No collaborators found for this workspace.");
+          setCollaborators([]); // Reset or handle as per requirement
+        } else {
+          setCollaborators(response.data);
+        }
+      } else {
+        console.error("No valid data received for collaborators");
+        setCollaborators([]); // Reset or handle as per requirement
+      }
+    } catch (error) {
+      console.error("Error fetching collaborators:", error);
+      toast.error("Failed to fetch collaborators.");
+      setCollaborators([]); // Reset or handle as per requirement
+    }
+  };
+
+  // Add collaborator to workspace
+  const handleAddCollaborator = async (collaborator) => {
     if (!collaborator || !collaborator._id) {
-      setNotification({ type: "error", message: "No collaborator selected!" });
+      toast.error("Collaborator ID is missing.");
       return;
     }
 
     try {
-      console.log("Adding collaborator to workspace:", selectedWorkspace._id);
-      console.log("Collaborator ID:", collaborator._id);
-
-      await axios.post(
-        `http://localhost:4000/api/workspaces/${selectedWorkspace._id}/add-collaborator`,
-        { collaboratorId: collaborator._id },
-        { withCredentials: true }
-      );
-      setNotification({
-        type: "success",
-        message: `${collaborator.name} added as a collaborator.`,
-      });
-
-      // Refetch the workspace after adding the collaborator
-      console.log(user);
-      console.log("Refetching workspaces for user", collaborator._id);
-      await fetchWorkspacesByUserId(collaborator._id);
-      console.log("Refetching specific workspace", selectedWorkspace._id);
-      await fetchWorkspaceById(selectedWorkspace._id);
+      await addCollaboratorToWorkspace(collaborator);
+      toast.success(`${collaborator.username} added as ${selectedRole}.`);
+      handleFetchCollaborators(selectedWorkspace._id);
     } catch (error) {
+      toast.error(error.message || "Error adding collaborator.");
       console.error("Error adding collaborator:", error);
-      setNotification({
-        type: "error",
-        message: error.response
-          ? error.response.data.message
-          : "Error adding collaborator.",
-      });
     }
   };
 
@@ -126,25 +143,23 @@ const Setting = () => {
 
       {/* Workspace selection */}
       <h3>Select a Workspace</h3>
-      {workspaces.length > 0 ? (
+      {Array.isArray(workspaces) && workspaces.length > 0 ? (
         <div className="workspace-list">
           {workspaces.map((workspace) => (
-            <div
+            <button
               key={workspace._id}
               onClick={() => handleWorkspaceSelection(workspace)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  handleWorkspaceSelection(workspace);
+                }
+              }}
               className={`workspace-item ${
                 selectedWorkspace?._id === workspace._id ? "selected" : ""
               }`}
             >
               {workspace.name}
-              <Button
-                variant="danger"
-                className="ms-4"
-                onClick={() => deleteWorkspace(workspace._id)}
-              >
-                <FontAwesomeIcon icon={faTimesCircle} />
-              </Button>
-            </div>
+            </button>
           ))}
         </div>
       ) : (
@@ -164,7 +179,7 @@ const Setting = () => {
                   type="text"
                   placeholder="Search by document name"
                   value={searchTerm}
-                  onChange={handleSearch}
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
                 <FontAwesomeIcon icon={faSearch} className="search-icon" />
               </div>
@@ -175,24 +190,20 @@ const Setting = () => {
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {filteredDocuments.map((document) => (
-                <tr key={document._id}>
-                  <td>{document.name}</td>
-                  <td>
-                    <Button
-                      variant="info"
-                      onClick={() => handlePreviewDocument(document._id)}
-                      className="me-3"
-                    >
-                      <FontAwesomeIcon icon={faEye} />
-                    </Button>
-                  </td>
+              {filteredDocuments.length > 0 ? (
+                filteredDocuments.map((document) => (
+                  <tr key={document._id}>
+                    <td>{document.name}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td>No documents found</td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </Table>
 
@@ -214,25 +225,52 @@ const Setting = () => {
             </Form.Group>
           </Form>
 
-          <ul className="collaborators-list mt-3">
-            {collaborators.length > 0 ? (
-              collaborators.map((collaborator) => (
-                <li key={collaborator._id}>
-                  {" "}
-                  {/* Added a unique key here */}
-                  {collaborator.name}{" "}
-                  <Button
-                    variant="success"
-                    onClick={() => addCollaboratorToWorkspace(collaborator)}
-                  >
-                    Add as Collaborator
-                  </Button>
-                </li>
-              ))
-            ) : (
-              <p>No collaborators found</p>
-            )}
-          </ul>
+          {/* Collaborator Role Selection */}
+          <Form.Group controlId="collaboratorRoleSelect" className="mb-3">
+            <Form.Label>Select Role</Form.Label>
+            <Form.Control
+              as="select"
+              value={selectedRole}
+              onChange={(e) => setSelectedRole(e.target.value)}
+            >
+              <option value="Viewer">Viewer</option>
+              <option value="Editor">Editor</option>
+              <option value="Admin">Admin</option>
+            </Form.Control>
+          </Form.Group>
+
+          <h5>Collaborators</h5>
+          <Table striped bordered hover>
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {collaborators.length > 0 ? (
+                collaborators.map((collaborator, index) => (
+                  <tr key={collaborator._id || `collaborator-${index}`}>
+                    <td>{collaborator.username}</td>
+                    <td>{collaborator.email}</td>
+                    <td>
+                      <Button
+                        variant="success"
+                        onClick={() => handleAddCollaborator(collaborator)}
+                      >
+                        Add as {selectedRole}
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="3">No collaborators found</td>
+                </tr>
+              )}
+            </tbody>
+          </Table>
         </>
       )}
     </div>

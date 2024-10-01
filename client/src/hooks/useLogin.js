@@ -2,8 +2,7 @@ import { useState, useCallback } from "react";
 import axios from "axios";
 import { useAuthContext } from "../context/AuthContext";
 
-const apiUrl = process.env.REACT_APP_API_URL;
-const localUrl = "http://localhost:4000";
+const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
 export const useLogin = () => {
   const [email, setEmail] = useState("");
@@ -23,9 +22,7 @@ export const useLogin = () => {
 
       try {
         const response = await axios.post(
-          `${
-            process.env.NODE_ENV === "production" ? apiUrl : localUrl
-          }/api/users/login`,
+          `${apiUrl}/api/users/login`,
           { email, password },
           { withCredentials: true }
         );
@@ -33,7 +30,7 @@ export const useLogin = () => {
         const { token, user } = response.data;
 
         if (token && user) {
-          // Store token and user in local storage
+          // Store token and user in localStorage
           localStorage.setItem("token", token);
           localStorage.setItem("user", JSON.stringify({ token, user }));
 
@@ -43,15 +40,15 @@ export const useLogin = () => {
           // Dispatch login success
           dispatch({ type: "LOGIN_SUCCESS", payload: user });
 
-          // Set success message
           setSuccessMessage("Login successful");
         } else {
-          console.error("Unexpected response format:", response.data);
-          throw new Error("Invalid response data");
+          throw new Error("Unexpected response format");
         }
       } catch (error) {
         console.error("Login error:", error);
-        setErrorMessage(error.response?.data?.message || "Login failed");
+        setErrorMessage(
+          error.response?.data?.message || "Login failed. Please try again."
+        );
         dispatch({ type: "AUTH_ERROR" });
       } finally {
         setIsLoading(false);

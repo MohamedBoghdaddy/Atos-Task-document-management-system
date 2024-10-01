@@ -1,4 +1,3 @@
-// models/WorkspaceModel.js
 import mongoose from "mongoose";
 
 const workspaceSchema = new mongoose.Schema({
@@ -7,32 +6,38 @@ const workspaceSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  description: {
-    type: String,
-  },
+  description: String,
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    required: true,
+    required: true, // User who created the workspace
   },
-  createdAt: {
-    type: Date,
-    default: Date.now,
+  collaborators: [
+    {
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+      },
+      role: {
+        type: String,
+        enum: ["Viewer", "Editor", "Admin"],
+        default: "Editor",
+      },
+    },
+  ],
+  public: {
+    type: Boolean,
+    default: true,
   },
   deleted: {
     type: Boolean,
     default: false,
   },
-  collaborators: [
-    {
-      collaboratorId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
-      role: {
-        type: String,
-        enum: ["Viewer", "Editor", "Admin"],
-        default: "Viewer",
-      },
-    },
-  ],
+  lastModified: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 const Workspace = mongoose.model("Workspace", workspaceSchema);

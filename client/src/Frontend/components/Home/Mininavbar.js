@@ -1,5 +1,14 @@
 import React, { useState } from "react";
-import { Navbar, Nav, Container, Modal } from "react-bootstrap";
+import {
+  Navbar,
+  Nav,
+  Container,
+  Modal,
+  Form,
+  Row,
+  Col,
+  Button,
+} from "react-bootstrap";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUser, faSignOutAlt } from "@fortawesome/free-solid-svg-icons";
 import { Link, useNavigate } from "react-router-dom";
@@ -67,7 +76,6 @@ const NavBar = () => {
             >
               Dashboard{" "}
             </ScrollLink>
-           
 
             {isAuthenticated && user ? (
               <div
@@ -102,6 +110,20 @@ const NavBar = () => {
                 <FontAwesomeIcon icon={faUser} />
               </div>
             )}
+            <Form inline>
+              <Row>
+                <Col xs="auto">
+                  <Form.Control
+                    type="text"
+                    placeholder="Search"
+                    className=" mr-sm-2"
+                  />
+                </Col>
+                <Col xs="auto">
+                  <Button type="submit">Submit</Button>
+                </Col>
+              </Row>
+            </Form>
           </Nav>
         </Navbar.Collapse>
       </Container>

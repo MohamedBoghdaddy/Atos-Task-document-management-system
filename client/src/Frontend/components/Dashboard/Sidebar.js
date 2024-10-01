@@ -1,8 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { FaUser, FaCog } from "react-icons/fa";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"; // Import FontAwesomeIcon
-import { faTrash } from "@fortawesome/free-solid-svg-icons"; // Correctly import faTrash
+import { FaFolder, FaChartLine, FaTools, FaTrash } from "react-icons/fa";
 import "../styles/Sidebar.css";
 import { useAuthContext } from "../../../context/AuthContext";
 
@@ -20,23 +18,25 @@ const Sidebar = () => {
       <ul className="sidebar-menu">
         <li>
           <Link to="/analytics">
-            <FaUser /> Analytics
+            <FaChartLine /> Analytics
           </Link>
         </li>
+
         <li>
-          <Link to="/Workspace">
-            <FaUser /> Workspace
+          <Link to="/workspace">
+            <FaFolder /> Workspace
           </Link>
         </li>
+
         <li>
           <Link to="/recyclebin">
-            <FontAwesomeIcon icon={faTrash} /> Recycle Bin
+            <FaTrash /> Recycle Bin
           </Link>
         </li>
 
         <li>
           <Link to="/setting">
-            <FaCog /> Settings
+            <FaTools /> Settings
           </Link>
         </li>
       </ul>

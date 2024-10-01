@@ -12,7 +12,8 @@ import Dashboard from "./Frontend/components/Dashboard/Dashboard";
 import RecycleBin from "./Frontend/components/Dashboard/RecycleBin";
 import Setting from "./Frontend/components/Dashboard/Setting";
 import Analytics from "./Frontend/components/Dashboard/Analytics";
-
+import {  ToastContainer } from "react-toastify";
+import SearchResults from "./Frontend/components/Home/SearchResults";
 function App() {
   return (
     <BrowserRouter>
@@ -21,7 +22,9 @@ function App() {
           path="/"
           element={
             <>
+              <ToastContainer />
               <NavBar />
+
               <Home />
               <Footer />
             </>
@@ -31,6 +34,7 @@ function App() {
           path="/login"
           element={
             <>
+              <ToastContainer />
               <MiniNavBar />
               <Login />
             </>
@@ -40,6 +44,7 @@ function App() {
           path="/signup"
           element={
             <>
+              <ToastContainer />
               <MiniNavBar />
               <Signup />
             </>
@@ -49,6 +54,7 @@ function App() {
           path="/Workspace"
           element={
             <>
+              <ToastContainer />
               <MiniNavBar />
               <Workspace />
               <Sidebar />
@@ -60,6 +66,7 @@ function App() {
           path="/Dashboard"
           element={
             <>
+              <ToastContainer />
               <MiniNavBar />
               <Dashboard />
               <Sidebar />
@@ -71,6 +78,7 @@ function App() {
           path="/RecycleBin"
           element={
             <>
+              <ToastContainer />
               <MiniNavBar />
               <RecycleBin />
               <Sidebar />
@@ -82,6 +90,7 @@ function App() {
           path="/Setting"
           element={
             <>
+              <ToastContainer />
               <MiniNavBar />
               <Setting />
               <Sidebar />
@@ -93,10 +102,21 @@ function App() {
           path="/Analytics"
           element={
             <>
+              <ToastContainer />
               <MiniNavBar />
               <Analytics />
               <Sidebar />
               <Footer />
+            </>
+          }
+        />
+        <Route
+          path="/SearchResults"
+          element={
+            <>
+              <ToastContainer />
+              <MiniNavBar />
+              <SearchResults />
             </>
           }
         />

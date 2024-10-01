@@ -26,6 +26,10 @@ const UserSchema = new mongoose.Schema(
     cvFileName: {
       type: String,
     },
+    collaborator: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

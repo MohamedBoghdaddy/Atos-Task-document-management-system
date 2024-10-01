@@ -2,6 +2,8 @@ import { useCallback } from "react";
 import axios from "axios";
 import { useAuthContext } from "../context/AuthContext";
 
+const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:4000";
+
 export const useLogout = () => {
   const { dispatch } = useAuthContext();
 
@@ -9,14 +11,17 @@ export const useLogout = () => {
     try {
       // Send the logout request to the server
       await axios.post(
-        "http://localhost:4000/api/users/logout",
+        `${apiUrl}/api/users/logout`,
         {},
-        { withCredentials: true } // Ensure cookies are sent if needed
+        { withCredentials: true }
       );
 
       // Clear localStorage (client-side only)
       localStorage.removeItem("user");
       localStorage.removeItem("token");
+
+      // Remove Authorization header
+      delete axios.defaults.headers.common["Authorization"];
 
       // Dispatch the logout action to update the auth state
       dispatch({ type: "LOGOUT_SUCCESS" });

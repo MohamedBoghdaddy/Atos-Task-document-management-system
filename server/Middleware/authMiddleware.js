@@ -41,7 +41,7 @@ export const auth = async (req, res, next) => {
   }
 };
 
-// Middleware to authorize specific roles
+// Middleware to authorize specific roles globally
 export const authorizeRoles = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {

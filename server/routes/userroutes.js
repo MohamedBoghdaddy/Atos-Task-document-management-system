@@ -8,6 +8,7 @@ import {
   deleteUser,
   checkAuth,
   searchUsersByUsername,
+  fetchCollaborators,
 } from "../controller/usercontroller.js";
 import { auth, authorizeRoles } from "../Middleware/authMiddleware.js";
 
@@ -29,8 +30,11 @@ router.get("/dashboard", auth, authorizeRoles("admin", "user"), (req, res) => {
   res.status(200).json({ message: "Welcome to the Dashboard" });
 });
 
-router.get("/checkAuth", checkAuth);
+router.get("/checkAuth", auth, checkAuth);
 
 router.get("/search", auth, searchUsersByUsername);
+
+router.get("/:id/collaborators", auth, fetchCollaborators);
+
 
 export default router;

@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { useAuthContext } from "../context/AuthContext"; // Adjust path if necessary
 import axios from "axios";
+import { useAuthContext } from "../context/AuthContext";
+
+const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
 export const useSignup = () => {
   const [username, setUsername] = useState("");
@@ -33,7 +35,7 @@ export const useSignup = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:4000/api/users/signup",
+        `${apiUrl}/api/users/signup`,
         {
           username,
           email,
@@ -47,14 +49,20 @@ export const useSignup = () => {
         { withCredentials: true }
       );
 
-      const { user } = response.data; // Destructure user from response
+      const { user } = response.data;
 
+      // Store user in local storage
+      localStorage.setItem("user", JSON.stringify({ user }));
+
+      // Dispatch signup success
       dispatch({ type: "REGISTRATION_SUCCESS", payload: user });
 
       setSuccessMessage("Registration successful");
     } catch (error) {
       console.error("Signup error:", error);
-      setErrorMessage(error.response?.data?.message || "Signup failed");
+      setErrorMessage(
+        error.response?.data?.message || "Signup failed. Please try again."
+      );
     } finally {
       setIsLoading(false);
     }

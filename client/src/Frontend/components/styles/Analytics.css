@@ -15,3 +15,10 @@
   align-items: center;
   height: 100vh;
 }
+.workspace-item {
+  display: block;
+  background-color: #3498db;
+  color: white;
+  padding: 10px;
+  margin: 10px 0;
+}

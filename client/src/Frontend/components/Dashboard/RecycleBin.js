@@ -8,25 +8,24 @@ import "bootstrap/dist/css/bootstrap.min.css";
 
 const RecycleBin = () => {
   const {
-    fetchDocumentsinRecycleBin,
     restoreDocument,
     deleteDocument,
     recycleBin,
-    selectedWorkspace, 
-    fetchWorkspaces, 
-    workspaces, 
-    setSelectedWorkspace, 
+    fetchDocuments, // Fetch documents from context
+    fetchWorkspacesByUser,
+    workspaces = [],
   } = useContext(DashboardContext);
 
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState(null);
   const [workspaceId, setWorkspaceId] = useState("");
 
+  // Load workspaces when the component mounts
   useEffect(() => {
     const loadWorkspaces = async () => {
       setLoading(true);
       try {
-        await fetchWorkspaces();
+        await fetchWorkspacesByUser(); // Fetch workspaces on component mount
       } catch (error) {
         console.error("Error fetching workspaces:", error);
         setNotification({
@@ -39,15 +38,15 @@ const RecycleBin = () => {
     };
 
     loadWorkspaces();
-  }, [fetchWorkspaces]);
+  }, [fetchWorkspacesByUser]);
 
+  // Fetch deleted documents when a workspace is selected
   useEffect(() => {
     const loadRecycleBinData = async () => {
-      if (!workspaceId) return; 
-
+      if (!workspaceId) return;
       setLoading(true);
       try {
-        await fetchDocumentsinRecycleBin(workspaceId); 
+        await fetchDocuments(workspaceId, true); // Fetch only deleted documents
       } catch (error) {
         console.error("Error fetching recycled documents:", error);
         setNotification({
@@ -60,15 +59,14 @@ const RecycleBin = () => {
     };
 
     if (workspaceId) {
-      loadRecycleBinData(); 
+      loadRecycleBinData();
     }
-  }, [workspaceId, fetchDocumentsinRecycleBin]);
+  }, [workspaceId, fetchDocuments]);
 
   // Handle workspace change
   const handleWorkspaceChange = (e) => {
     const selectedWorkspaceId = e.target.value;
     setWorkspaceId(selectedWorkspaceId); // Update the selected workspace ID
-    setSelectedWorkspace(selectedWorkspaceId); // Set the selected workspace in DashboardContext
   };
 
   const handleRestore = async (documentId) => {
@@ -150,7 +148,8 @@ const RecycleBin = () => {
               <tbody>
                 {recycleBin.map((document) => (
                   <tr key={document._id}>
-                    <td>{document.name}</td>
+                    <td>{document.name || "Unnamed Document"}</td>{" "}
+                    {/* Ensure name is valid */}
                     <td>
                       <Button
                         variant="warning"

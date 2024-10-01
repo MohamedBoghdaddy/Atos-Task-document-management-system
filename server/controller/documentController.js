@@ -30,26 +30,31 @@ const upload = multer({ storage: storage });
 export const uploadDocument = async (req, res) => {
   const { workspaceId } = req.body;
 
+  // Check for file
   if (!req.file) {
     return res.status(400).json({ message: "No file provided." });
   }
 
+  // Check for workspace ID
   if (!workspaceId) {
     return res.status(400).json({ message: "Workspace ID is required." });
   }
 
+  // Ensure `req.user` exists
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ message: "User not authenticated." });
+  }
+
   try {
     const file = req.file;
-
-    // Save the file path directly from multer
     const filePath = file.path;
 
-    // Create a new document entry in the database
+    // Create new document
     const newDocument = new Document({
       name: file.originalname,
       type: file.mimetype,
-      url: filePath, // Save the file path in the database
-      owner: req.user.id,
+      url: filePath,
+      owner: req.user.id, // Ensure the owner field is set
       workspace: workspaceId,
     });
 
@@ -64,6 +69,8 @@ export const uploadDocument = async (req, res) => {
     return res.status(500).json({ message: "Document upload failed", error });
   }
 };
+
+
 
 // Soft delete with permission checks
 export const softDeleteDocument = async (req, res) => {
@@ -125,7 +132,6 @@ export const restoreDocument = async (req, res) => {
       .json({ message: "Document restoration failed", error });
   }
 };
-
 
 // GET /api/documents/:workspaceId/documents
 export const listDocumentsInWorkspace = async (req, res) => {
@@ -251,7 +257,6 @@ export const previewDocument = async (req, res) => {
     return res.status(500).json({ message: "Document preview failed", error });
   }
 };
-
 // Update document metadata
 export const updateDocumentMetadata = async (req, res) => {
   try {
@@ -289,66 +294,66 @@ export const updateDocumentTags = async (req, res) => {
   }
 };
 
-export const listDocumentsInRecycleBin = async (req, res) => {
-  try {
-    const { workspaceId } = req.params;
-    const { sortBy = "createdAt", order = "asc", filter = {} } = req.query;
-
-    // Fetch only the documents that are deleted within the specified workspace
-    const documents = await Document.find({
-      workspace: workspaceId,
-      deleted: true,
-      ...filter,
-    })
-      .sort({ [sortBy]: order === "asc" ? 1 : -1 })
-      .exec();
-
-    return res.json(documents);
-  } catch (error) {
-    console.error("Error listing documents:", error);
-    return res.status(500).json({ message: "Error listing documents", error });
-  }
-};
-
 export const updateDocument = async (req, res) => {
-  const document = await Document.findById(req.params.id);
-
-  // Check if the user is a collaborator
-  const workspace = await Workspace.findById(document.workspace);
-  const isOwner = workspace.user.toString() === req.user._id;
-  const isCollaborator = workspace.collaborators.includes(req.user._id);
-
-  // Only the owner or collaborator with edit rights can update documents
-  if (!isOwner && !isCollaborator) {
-    return res.status(403).json({
-      message: "You do not have permission to update this document",
-    });
-  }
-
-  // Proceed with the update
-};
-
-
-// Search documents by metadata and tags
-export const searchDocuments = async (req, res) => {
   try {
-    const { metadata, tags } = req.query;
-    const filter = {};
+    const document = await Document.findById(req.params.id);
 
-    if (metadata) {
-      // Use regex for a partial match on metadata (case insensitive)
-      filter.metadata = { $regex: metadata, $options: "i" };
+    if (!document) {
+      return res.status(404).json({ message: "Document not found" });
     }
 
+    const workspace = await Workspace.findById(document.workspace);
+    const isUser = workspace.user.toString() === req.user._id.toString();
+    const isCollaborator = workspace.collaborators.some(
+      (collaborator) => collaborator.user.toString() === req.user._id.toString()
+    );
+
+    // Only the owner or collaborator with edit rights can update documents
+    if (!isUser && !isCollaborator) {
+      return res.status(403).json({
+        message: "You do not have permission to update this document",
+      });
+    }
+
+    // Proceed with the document update (example: updating the name)
+    document.name = req.body.name || document.name;
+    await document.save();
+
+    return res.status(200).json(document);
+  } catch (error) {
+    console.error("Error updating document:", error);
+    return res.status(500).json({ message: "Document update failed", error });
+  }
+};
+
+export const searchDocuments = async (req, res) => {
+  try {
+    const { metadata, tags, name } = req.query;
+    const filter = {};
+
+    // Use regex for a partial match on document names (case insensitive)
+    if (name) {
+      filter.name = { $regex: name.trim(), $options: "i" };
+    }
+
+    // Use regex for a partial match on metadata (case insensitive)
+    if (metadata) {
+      filter.metadata = { $regex: metadata.trim(), $options: "i" };
+    }
+
+    // Search for documents that contain any of the tags
     if (tags) {
-      // Search for documents that contain any of the tags
-      filter.tags = { $in: tags.split(',') };
+      const tagArray = tags.split(",").map((tag) => tag.trim());
+      filter.tags = { $in: tagArray };
     }
 
     const documents = await Document.find(filter);
-    
+
+    // If no documents are found, return 200 with an empty array
     if (!documents.length) {
-      return res.status(404).json({ message: "No documents found" });
+      return res
+        .status(200)
+        .json({ message: "No documents found", documents: [] });
     }
 
     res.status(200).json(documents);
@@ -357,3 +362,4 @@ export const searchDocuments = async (req, res) => {
     res.status(500).json({ message: "Error searching documents", error });
   }
 };
+
