@@ -19,16 +19,16 @@ The **Atos Task Document Management System** is a streamlined solution for manag
 ## User Interface & Workflow 🖥️  
 
 ### Document Upload  
-![Document Upload](../images/crud.png)  
+![Document Upload](./images/crud.png)  
 
 ### Document Overview  
-![Document Overview](../images/analytics.png)  
+![Document Overview](./images/analytics.png)  
 
 ### Add Collaborator 
-![Add_Collaborator](../images/collaborator.png)  
+![Add_Collaborator](./images/collaborator.png)  
 
 ### Recycle Bin
-![Recycle_Bin](../images/recycle_bin.png)  
+![Recycle_Bin](./images/recycle_bin.png)  
 
 ## Installation 🛠️  
 1. Clone the repository:  
