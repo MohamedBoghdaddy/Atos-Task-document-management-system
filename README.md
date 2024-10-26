@@ -11,6 +11,7 @@ The **Atos Task Document Management System** is a streamlined solution for manag
 - **Document versioning** 🗃️: Keep track of document history with version control.
 
 ## Technologies Used 🔧  
+- **Stack**: MERN
 - **Frontend**: React  
 - **Backend**: Node.js, Express.js  
 - **Database**: MongoDB  
