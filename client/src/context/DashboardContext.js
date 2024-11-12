@@ -450,7 +450,7 @@ const filteredDocs = useMemo(() => {
     setShowPreviewModal,
     previewFile,
     setPreviewFile,
-    selectedWorkspace, // Added selectedWorkspace in context
+    selectedWorkspace, 
     setSelectedWorkspace,
     getDocumentMetadata,
     updateDocumentTags,
