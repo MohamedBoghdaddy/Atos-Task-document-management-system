@@ -9,6 +9,7 @@ import {
   checkAuth,
   searchUsersByUsername,
   fetchCollaborators,
+  upload, // import the upload middleware
 } from "../controller/usercontroller.js";
 import { auth, authorizeRoles } from "../Middleware/authMiddleware.js";
 
@@ -19,7 +20,7 @@ router.post("/login", login);
 router.post("/logout", logoutUser);
 
 router.get("/getone/:userId", getUser);
-router.put("/update/:userId", auth, updateUser);
+router.put("/update/:userId", auth, upload.single("photoFile"), updateUser); // apply upload middleware here
 router.delete("/:userId", auth, deleteUser);
 
 router.get("/admin", auth, authorizeRoles("admin"), (req, res) => {
@@ -35,6 +36,5 @@ router.get("/checkAuth", auth, checkAuth);
 router.get("/search", auth, searchUsersByUsername);
 
 router.get("/:id/collaborators", auth, fetchCollaborators);
-
 
 export default router;
