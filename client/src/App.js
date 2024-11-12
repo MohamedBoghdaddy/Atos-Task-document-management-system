@@ -14,6 +14,8 @@ import Setting from "./Frontend/components/Dashboard/Setting";
 import Analytics from "./Frontend/components/Dashboard/Analytics";
 import {  ToastContainer } from "react-toastify";
 import SearchResults from "./Frontend/components/Home/SearchResults";
+import "bootstrap/dist/css/bootstrap.min.css";
+
 function App() {
   return (
     <BrowserRouter>
