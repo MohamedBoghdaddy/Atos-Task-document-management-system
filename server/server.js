@@ -12,7 +12,6 @@ import { fileURLToPath } from "url";
 import userRoutes from "./routes/userroutes.js";
 import workspaceRoutes from "./routes/workspaceRoutes.js";
 import documentRoutes from "./routes/documentRoutes.js";
-import User from "./models/UserModel.js";
 import analyticRoutes from "./routes/analyticRoutes.js";
 // Resolving __dirname for ES Module
 const __filename = fileURLToPath(import.meta.url);
@@ -112,6 +111,9 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send("Something went wrong!");
 });
+
+
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Serve the client app
 app.use(express.static(path.join(__dirname, "../client/build")));
