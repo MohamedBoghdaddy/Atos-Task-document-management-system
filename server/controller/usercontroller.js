@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+import Workspace from "../models/WorkspaceModel.js";
 import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
@@ -28,6 +30,33 @@ const storage = multer.diskStorage({
 
 export const upload = multer({ storage: storage });
 
+// Update User function to handle profile photo
+export const updateUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const updates = { ...req.body };
+
+    if (req.file) {
+      updates.profilePhoto = `/uploads/${req.file.filename}`;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId, updates, {
+      new: true,
+    }).select("-password");
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res
+      .status(200)
+      .json({ msg: "User updated successfully", user: updatedUser });
+  } catch (error) {
+    console.error("Error updating user:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 // Function to create a JWT token
 const createToken = (user) =>
   jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: "30d" });
@@ -38,7 +67,7 @@ export const register = async (req, res) => {
     username,
     email,
     password,
-    nid, 
+    nid,
     firstName,
     middleName,
     lastName,
@@ -112,8 +141,6 @@ export const login = async (req, res) => {
 
     const token = createToken(user);
 
-
-
     res.status(200).json({
       token,
       user: { _id: user._id, username: user.username, email: user.email },
@@ -134,7 +161,6 @@ export const logoutUser = async (req, res) => {
   }
 };
 
-
 export const getUser = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -144,37 +170,6 @@ export const getUser = async (req, res) => {
     res.status(200).json(user);
   } catch (error) {
     res.status(500).json({ message: error.message });
-  }
-};
-
-export const updateUser = async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const updates = { ...req.body };
-
-    if (req.files) {
-      if (req.files.cvFile) {
-        updates.cvFileName = req.files.cvFile[0].filename;
-      }
-      if (req.files.photoFile) {
-        updates.profilePhoto = `/uploads/${req.files.photoFile[0].filename}`;
-      }
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(userId, updates, {
-      new: true,
-    }).select("-password");
-
-    if (!updatedUser) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    res
-      .status(200)
-      .json({ msg: "User updated successfully", user: updatedUser });
-  } catch (error) {
-    console.error("Error updating user:", error);
-    res.status(500).json({ error: error.message });
   }
 };
 
@@ -236,8 +231,8 @@ export const fetchCollaborators = async (req, res) => {
     }
 
     const workspace = await Workspace.findById(workspaceId).populate({
-      path: "collaborators", 
-      select: "username email", 
+      path: "collaborators",
+      select: "username email",
     });
 
     if (!workspace) {
@@ -252,4 +247,3 @@ export const fetchCollaborators = async (req, res) => {
       .json({ message: "Failed to fetch collaborators", error: error.message });
   }
 };
-
