@@ -459,7 +459,6 @@ const filteredDocs = useMemo(() => {
     setCollaborators,
     selectedRole,
     setSelectedRole,
-    fetchCollaborators,
     searchDocumentsWithParams,
     filteredDocs,
   }));

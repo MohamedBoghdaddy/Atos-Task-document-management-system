@@ -74,9 +74,9 @@ useEffect(() => {
     );
     setFilteredDocuments(filtered);
   } else {
-    setFilteredDocuments(documents); 
+    setFilteredDocuments(documents);
   }
-}, [searchTerm, documents]);
+}, [searchTerm, documents, setFilteredDocuments]);
 
 const handleSearchInputChange = (e) => {
   setSearchTerm(e.target.value);
@@ -133,9 +133,7 @@ const handleSearchInputChange = (e) => {
     }
   };
 
-  const handleSearch = (event) => {
-    setSearchTerm(event.target.value);
-  };
+ 
 
 const handlePreviewDocument = async (documentId) => {
   try {
@@ -180,25 +178,7 @@ const handlePreviewDocument = async (documentId) => {
     setShowMetadataModal(true);
   };
 
-  const handleMetadataUpdate = async (event) => {
-    event.preventDefault();
-    try {
-      await updateDocumentMetadata(selectedDocument._id, { metadata });
-      await updateDocumentTags(selectedDocument._id, tags.split(","));
-      setNotification({
-        type: "success",
-        message: "Document metadata and tags updated successfully!",
-      });
-      fetchDocuments(selectedWorkspace._id);
-      setShowMetadataModal(false);
-    } catch (error) {
-      console.error("Error updating metadata/tags:", error);
-      setNotification({
-        type: "error",
-        message: "Failed to update metadata/tags.",
-      });
-    }
-  };
+
 
   const pageCount = Math.ceil(documents.length / documentsPerPage);
   const indexOfLastDocument = currentPage * documentsPerPage;
