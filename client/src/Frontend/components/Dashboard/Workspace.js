@@ -199,6 +199,8 @@ const handlePreviewDocument = async (documentId) => {
       </Pagination.Item>
     );
   }
+// Use them or remove them if not needed
+console.log(updateDocumentMetadata, updateDocumentTags, selectedDocument, metadata, tags);
 
   return (
     <div className="workspace-container">
