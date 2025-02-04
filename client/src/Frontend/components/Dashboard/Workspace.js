@@ -44,13 +44,12 @@ const Workspace = () => {
   const [workspaceDescription, setWorkspaceDescription] = useState("");
   const [workspaceVisibility, setWorkspaceVisibility] = useState("private");
   const [notification, setNotification] = useState(null);
-  const [filteredDocuments, setFilteredDocuments] = useState([]);
-  const [publicWorkspaces, setPublicWorkspaces] = useState([]);
+  const [ setFilteredDocuments] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [documentsPerPage] = useState(3);
 
   // New states for document metadata and tags modal
-  const [showMetadataModal, setShowMetadataModal] = useState(false);
+  const [ setShowMetadataModal] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [metadata, setMetadata] = useState("");
   const [tags, setTags] = useState("");

@@ -1,6 +1,6 @@
 import React from "react";
 import "../../styles/login.css"; // Adjust the path as needed
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useLogin } from "../../../../hooks/useLogin";
 
 const Login = () => {

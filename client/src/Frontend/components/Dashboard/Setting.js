@@ -26,16 +26,12 @@ const Setting = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [collaboratorSearch, setCollaboratorSearch] = useState("");
   const [collaborators, setCollaborators] = useState([]);
-  const [notification, setNotification] = useState(null);
+  const [notification] = useState(null);
   const [filteredDocuments, setFilteredDocuments] = useState([]);
   const [selectedRole, setSelectedRole] = useState("Viewer");
   const { workspaceId } = useParams();
 
-  // Notify example function
-  const handleNotification = () => {
-    toast.success("Success message!");
-  };
-
+  
   // Fetch workspaces and collaborators on component mount
   useEffect(() => {
     if (user?.id) {

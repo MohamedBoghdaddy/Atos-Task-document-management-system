@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useContext } from "react";
 import {
   Navbar,
   Nav,
@@ -17,16 +17,13 @@ import logo from "../assets/images/logo.png"; // Adjust path as per your project
 import Login from "../LOGIN&REGISTRATION/Login/Login"; // Adjust path to Login component
 import { useAuthContext } from "../../../context/AuthContext";
 import { useLogout } from "../../../hooks/useLogout.js";
-import axios from "axios";
 import "../styles/navbar.css";
 import "bootstrap/dist/css/bootstrap.min.css";
-import { DashboardContext } from "../../../context/DashboardContext"; // Import the DashboardContext
 
 const NavBar = () => {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [searchTerm, setSearchTerm] = useState(""); // New state to capture search term
-  const { searchPublicWorkspaces } = useContext(DashboardContext); // Fetch search function from context
   const navigate = useNavigate();
   const { state } = useAuthContext();
 
