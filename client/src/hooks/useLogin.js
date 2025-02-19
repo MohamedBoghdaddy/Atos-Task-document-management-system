@@ -2,7 +2,11 @@ import { useState, useCallback } from "react";
 import axios from "axios";
 import { useAuthContext } from "../context/AuthContext";
 
-const API_URL = process.env.REACT_APP_API_URL || "http://localhost:4000";
+const API_URL =
+  process.env.REACT_APP_API_URL ??
+  (window.location.hostname === "localhost"
+    ? "http://localhost:4000"
+    : "https://atos-task-document-management-system.onrender.com");
 
 export const useLogin = () => {
   const [email, setEmail] = useState("");
