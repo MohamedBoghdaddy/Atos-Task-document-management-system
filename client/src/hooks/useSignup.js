@@ -25,53 +25,52 @@ export const useSignup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { dispatch } = useAuthContext();
 
-const handleSignup = async (e) => {
-  if (e && e.preventDefault) {
-    e.preventDefault();
-  } else {
-    console.warn("handleSignup was called without an event object");
-    return;
-  }
-  setIsLoading(true);
-  setErrorMessage("");
-  setSuccessMessage("");
+  const handleSignup = async (e) => {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    } else {
+      console.warn("handleSignup was called without an event object");
+      return;
+    }
+    setIsLoading(true);
+    setErrorMessage("");
+    setSuccessMessage("");
 
-  if (password !== confirmPassword) {
-    setErrorMessage("Passwords do not match");
-    setIsLoading(false);
-    return;
-  }
+    if (password !== confirmPassword) {
+      setErrorMessage("Passwords do not match");
+      setIsLoading(false);
+      return;
+    }
 
-  try {
-    const response = await axios.post(
-      `${API_URL}/api/users/signup`,
-      {
-        username,
-        email,
-        password,
-        gender,
-        nid,
-        firstName,
-        middleName,
-        lastName,
-      },
-      { withCredentials: true }
-    );
+    try {
+      const response = await axios.post(
+        `${API_URL}/api/users/signup`,
+        {
+          username,
+          email,
+          password,
+          gender,
+          nid,
+          firstName,
+          middleName,
+          lastName,
+        },
+        { withCredentials: true }
+      );
 
-    const { user } = response.data;
-    localStorage.setItem("user", JSON.stringify({ user }));
-    dispatch({ type: "REGISTRATION_SUCCESS", payload: user });
-    setSuccessMessage("Registration successful");
-  } catch (error) {
-    console.error("Signup error:", error);
-    setErrorMessage(
-      error.response?.data?.message || "Signup failed. Please try again."
-    );
-  } finally {
-    setIsLoading(false);
-  }
-};
-
+      const { user } = response.data;
+      localStorage.setItem("user", JSON.stringify({ user }));
+      dispatch({ type: "REGISTRATION_SUCCESS", payload: user });
+      setSuccessMessage("Registration successful");
+    } catch (error) {
+      console.error("Signup error:", error);
+      setErrorMessage(
+        error.response?.data?.message || "Signup failed. Please try again."
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return {
     username,
