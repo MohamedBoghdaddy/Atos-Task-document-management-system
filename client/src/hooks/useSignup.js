@@ -21,52 +21,53 @@ export const useSignup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { dispatch } = useAuthContext();
 
-  const handleSignup = async (e) => {
+const handleSignup = async (e) => {
+  if (e && e.preventDefault) {
     e.preventDefault();
-    setIsLoading(true);
-    setErrorMessage("");
-    setSuccessMessage("");
+  } else {
+    console.warn("handleSignup was called without an event object");
+    return;
+  }
+  setIsLoading(true);
+  setErrorMessage("");
+  setSuccessMessage("");
 
-    if (password !== confirmPassword) {
-      setErrorMessage("Passwords do not match");
-      setIsLoading(false);
-      return;
-    }
+  if (password !== confirmPassword) {
+    setErrorMessage("Passwords do not match");
+    setIsLoading(false);
+    return;
+  }
 
-    try {
-      const response = await axios.post(
-        `${apiUrl}/api/users/signup`,
-        {
-          username,
-          email,
-          password,
-          gender,
-          nid,
-          firstName,
-          middleName,
-          lastName,
-        },
-        { withCredentials: true }
-      );
+  try {
+    const response = await axios.post(
+      `${apiUrl}/api/users/signup`,
+      {
+        username,
+        email,
+        password,
+        gender,
+        nid,
+        firstName,
+        middleName,
+        lastName,
+      },
+      { withCredentials: true }
+    );
 
-      const { user } = response.data;
+    const { user } = response.data;
+    localStorage.setItem("user", JSON.stringify({ user }));
+    dispatch({ type: "REGISTRATION_SUCCESS", payload: user });
+    setSuccessMessage("Registration successful");
+  } catch (error) {
+    console.error("Signup error:", error);
+    setErrorMessage(
+      error.response?.data?.message || "Signup failed. Please try again."
+    );
+  } finally {
+    setIsLoading(false);
+  }
+};
 
-      // Store user in local storage
-      localStorage.setItem("user", JSON.stringify({ user }));
-
-      // Dispatch signup success
-      dispatch({ type: "REGISTRATION_SUCCESS", payload: user });
-
-      setSuccessMessage("Registration successful");
-    } catch (error) {
-      console.error("Signup error:", error);
-      setErrorMessage(
-        error.response?.data?.message || "Signup failed. Please try again."
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return {
     username,

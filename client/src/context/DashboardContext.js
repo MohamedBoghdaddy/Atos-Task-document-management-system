@@ -12,6 +12,12 @@ import { useAuthContext } from "../context/AuthContext";
 
 export const DashboardContext = createContext();
 
+const API_URL =
+  process.env.REACT_APP_API_URL ??
+  (window.location.hostname === "localhost"
+    ? "http://localhost:4000"
+    : "https://atos-task-document-management-system.onrender.com");
+
 const DashboardProvider = ({ children }) => {
   const { state } = useAuthContext();
   const { user, isAuthenticated } = state;
@@ -19,7 +25,6 @@ const DashboardProvider = ({ children }) => {
   // State variables
   const [loading, setLoading] = useState(true);
   const [workspaces, setWorkspaces] = useState([]);
-
   const [documents, setDocuments] = useState([]);
   const [recycleBin, setRecycleBin] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -38,7 +43,7 @@ const DashboardProvider = ({ children }) => {
   const createWorkspace = useCallback(async (workspaceData) => {
     try {
       const response = await axios.post(
-        "http://localhost:4000/api/workspaces/createWorkspace",
+         `${API_URL}/api/workspaces/createWorkspace`,
         workspaceData,
         { withCredentials: true }
       );
@@ -65,7 +70,7 @@ const DashboardProvider = ({ children }) => {
     }
     try {
       const response = await axios.get(
-        `http://localhost:4000/api/workspaces/${user._id}`,
+        `${API_URL}/api/workspaces/${user._id}`,
         {
           withCredentials: true,
         }
@@ -82,7 +87,7 @@ const DashboardProvider = ({ children }) => {
     async (workspaceId) => {
       try {
         await axios.delete(
-          `http://localhost:4000/api/workspaces/deleteWorkspace/${workspaceId}`,
+          `${API_URL}/api/workspaces/deleteWorkspace/${workspaceId}`,
           {
             withCredentials: true,
           }
@@ -103,7 +108,7 @@ const DashboardProvider = ({ children }) => {
     async (workspaceId, onlyDeleted = false) => {
       try {
         const response = await axios.get(
-          `http://localhost:4000/api/documents/${workspaceId}/documents`,
+          `${API_URL}/api/documents/${workspaceId}/documents`,
           { withCredentials: true }
         );
         const allDocuments = response.data || [];
@@ -132,7 +137,7 @@ const DashboardProvider = ({ children }) => {
       formData.append("workspaceId", workspaceId); // Ensure workspaceId is not empty or undefined
 
       const response = await axios.post(
-        "http://localhost:4000/api/documents/upload",
+         `${API_URL}/api/documents/upload`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
@@ -156,7 +161,7 @@ const DashboardProvider = ({ children }) => {
         throw new Error("Invalid document ID.");
       }
       const response = await axios.put(
-        `http://localhost:4000/api/documents/${documentId}/soft-delete`,
+        `${API_URL}/api/documents/${documentId}/soft-delete`,
         { deleted: true },
         { withCredentials: true }
       );
@@ -181,7 +186,7 @@ const DashboardProvider = ({ children }) => {
         throw new Error("Invalid document ID.");
       }
       const response = await axios.get(
-        `http://localhost:4000/api/documents/download/${documentId}`,
+        `${API_URL}/api/documents/download/${documentId}`,
         { responseType: "blob" }
       );
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -202,7 +207,7 @@ const DashboardProvider = ({ children }) => {
   const restoreDocument = useCallback(async (documentId) => {
     try {
       const response = await axios.put(
-        `http://localhost:4000/api/documents/${documentId}/restore`,
+        `${API_URL}/api/documents/${documentId}/restore`,
         { deleted: false },
         { withCredentials: true }
       );
@@ -223,7 +228,7 @@ const DashboardProvider = ({ children }) => {
       }
 
       const response = await axios.get(
-        `http://localhost:4000/api/workspaces/${workspaceId}/collaborators`,
+        `${API_URL}/api/workspaces/${workspaceId}/collaborators`,
         { withCredentials: true }
       );
 
@@ -263,7 +268,7 @@ const DashboardProvider = ({ children }) => {
 
         // Send the request to add the collaborator
         await axios.post(
-          `http://localhost:4000/api/workspaces/${selectedWorkspace._id}/add-collaborator`,
+          `${API_URL}/api/workspaces/${selectedWorkspace._id}/add-collaborator`,
           { userId: user._id, role: selectedRole }, // Adjusted payload to match the new backend structure
           { withCredentials: true }
         );
@@ -298,7 +303,7 @@ const DashboardProvider = ({ children }) => {
       if (tags) query.append("tags", tags);
 
       const response = await axios.get(
-        `http://localhost:4000/api/documents/search?${query.toString()}`,
+        `${API_URL}/api/documents/search?${query.toString()}`,
         {
           withCredentials: true,
         }
@@ -324,7 +329,7 @@ const DashboardProvider = ({ children }) => {
   const searchPublicWorkspaces = useCallback(async (term) => {
     try {
       const response = await axios.get(
-        `http://localhost:4000/api/workspaces/search?q=${term}`,
+        `${API_URL}/api/workspaces/search?q=${term}`,
         {
           withCredentials: true,
         }
@@ -340,7 +345,7 @@ const DashboardProvider = ({ children }) => {
   const previewDocument = useCallback(async (documentId) => {
     try {
       const response = await axios.get(
-        `http://localhost:4000/api/documents/preview/${documentId}`,
+        `${API_URL}/api/documents/preview/${documentId}`,
         {
           withCredentials: true,
         }
@@ -355,7 +360,7 @@ const DashboardProvider = ({ children }) => {
   const updateDocumentMetadata = useCallback(async (documentId, metadata) => {
     try {
       const response = await axios.put(
-        `http://localhost:4000/api/documents/${documentId}/metadata`,
+        `${API_URL}/api/documents/${documentId}/metadata`,
         metadata,
         { withCredentials: true }
       );
@@ -376,7 +381,7 @@ const DashboardProvider = ({ children }) => {
   const getDocumentMetadata = useCallback(async (documentId) => {
     try {
       const response = await axios.get(
-        `http://localhost:4000/api/documents/${documentId}/metadata`,
+        `${API_URL}/api/documents/${documentId}/metadata`,
         { withCredentials: true }
       );
       return response.data;
@@ -390,7 +395,7 @@ const DashboardProvider = ({ children }) => {
   const updateDocumentTags = useCallback(async (documentId, tags) => {
     try {
       const response = await axios.put(
-        `http://localhost:4000/api/documents/${documentId}/tags`,
+        `${API_URL}/api/documents/${documentId}/tags`,
         { tags },
         { withCredentials: true }
       );

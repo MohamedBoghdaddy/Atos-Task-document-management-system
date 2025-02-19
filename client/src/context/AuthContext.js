@@ -8,6 +8,12 @@ import React, {
 } from "react";
 import axios from "axios";
 
+const API_URL =
+  process.env.REACT_APP_API_URL ??
+  (window.location.hostname === "localhost"
+    ? "http://localhost:4000"
+    : "https://atos-task-document-management-system.onrender.com");
+    
 const AuthContext = createContext();
 
 const initialState = {
@@ -27,12 +33,6 @@ const authReducer = (state, action) => {
         loading: false,
       };
     case "LOGOUT_SUCCESS":
-      return {
-        ...state,
-        user: null,
-        isAuthenticated: false,
-        loading: false,
-      };
     case "AUTH_ERROR":
       return { ...state, user: null, isAuthenticated: false, loading: false };
     default:
@@ -52,29 +52,25 @@ export const AuthProvider = ({ children }) => {
             .find((row) => row.startsWith("token="))
             ?.split("=")[1] || localStorage.getItem("token");
 
-        if (token) {
-          const response = await axios.get(
-            `${
-              process.env.REACT_APP_API_URL || "http://localhost:4000"
-            }/api/users/checkAuth`,
-            {
-              withCredentials: true,
-            }
-          );
-          const { user } = response.data;
-          if (user) {
-            dispatch({ type: "USER_LOADED", payload: user });
-            // Ensure the token is set for future requests
-            axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-            localStorage.setItem("user", JSON.stringify({ token, user }));
-          } else {
-            dispatch({ type: "AUTH_ERROR" });
-          }
+        if (!token) {
+          dispatch({ type: "AUTH_ERROR" });
+          return;
+        }
+
+        const response = await axios.get(`${API_URL}/api/users/checkAuth`, {
+          withCredentials: true,
+        });
+
+        const { user } = response.data;
+        if (user) {
+          dispatch({ type: "USER_LOADED", payload: user });
+          axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+          localStorage.setItem("user", JSON.stringify({ token, user }));
         } else {
           dispatch({ type: "AUTH_ERROR" });
         }
       } catch (error) {
-        console.error("Auth check failed", error);
+        console.error("❌ Auth check failed:", error);
         dispatch({ type: "AUTH_ERROR" });
       }
     }
@@ -82,6 +78,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
+
     if (storedUser) {
       try {
         const { token, user } = JSON.parse(storedUser);
@@ -89,14 +86,14 @@ export const AuthProvider = ({ children }) => {
           dispatch({ type: "LOGIN_SUCCESS", payload: user });
           axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
         } else {
-          checkAuth(); // Fallback to server check if no valid local data
+          checkAuth();
         }
       } catch (error) {
-        console.error("Failed to parse user from localStorage:", error);
+        console.error("❌ Failed to parse user from localStorage:", error);
         dispatch({ type: "AUTH_ERROR" });
       }
     } else {
-      checkAuth(); // Check server-side if no user is in local storage
+      checkAuth();
     }
   }, [checkAuth]);
 
@@ -106,18 +103,16 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: "LOGOUT_SUCCESS" });
   }, []);
 
-  // Memoize the context value to prevent unnecessary re-renders
   const contextValue = useMemo(
     () => ({ state, dispatch, logout }),
     [state, logout]
   );
 
-  // Log only if the state changes significantly (optional)
   useEffect(() => {
     if (!state.loading) {
-      console.log("AuthProvider state has changed:", state);
+      console.log("🔄 AuthProvider state updated:", state);
     }
-  }, [state.isAuthenticated, state.user, state.loading, state]);
+  }, [state.isAuthenticated, state.user, state.loading]);
 
   return (
     <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>

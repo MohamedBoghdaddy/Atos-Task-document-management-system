@@ -72,8 +72,6 @@ const Sidebar = () => {
         );
         const newProfilePhoto = response.data.user.profilePhoto;
         setProfilePhoto(newProfilePhoto);
-
-        // Save to localStorage
         localStorage.setItem("profilePhoto", newProfilePhoto);
         setImage(null); // Clear the image selection after saving
         setIsEditing(false); // Exit edit mode after saving

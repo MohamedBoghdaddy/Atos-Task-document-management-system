@@ -1,5 +1,6 @@
 body {
   margin: 0;
+  font-family: "Aeonik-Thin", sans-serif;
 }
 
 .main-Container {
@@ -96,16 +97,17 @@ body {
 }
 
 .show-password {
-  background-color: #504848;
+  background: none;
+  border: none;
   cursor: pointer;
   position: absolute;
   right: 10px;
   top: 32px; /* Adjusted from 36px to 32px to move it upward */
-  color: #120d0d;
+  color: #999;
 }
 
 .show-password:hover {
-  color: #0b0707;
+  color: #333;
 }
 
 .gender-container {
