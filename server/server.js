@@ -64,6 +64,22 @@ mongoose
 app.use(helmet()); // Secure HTTP headers
 app.use(morgan(isProduction ? "tiny" : "dev")); // Log requests in development
 
+
+// 🔗 CORS Configuration
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("❌ CORS Policy Violation: Request Blocked"));
+      }
+    },
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    credentials: true,
+  })
+);
+
 // Rate Limiting: Prevent brute-force attacks
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -71,6 +87,10 @@ const limiter = rateLimit({
   message: "Too many requests, please try again later.",
 });
 app.use(limiter);
+
+// ✅ Allowed Origins for CORS
+const allowedOrigins = [CORS_ORIGIN, "http://localhost:3000"];
+
 
 // CORS Configuration
 app.use(
