@@ -13,7 +13,7 @@ const API_URL =
   (window.location.hostname === "localhost"
     ? "http://localhost:4000"
     : "https://atos-task-document-management-system.onrender.com");
-    
+
 const AuthContext = createContext();
 
 const initialState = {
@@ -43,36 +43,44 @@ const authReducer = (state, action) => {
 export const AuthProvider = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
+  const setAuthorizationHeader = (token) => {
+    axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  };
+
+  const removeAuthorizationHeader = () => {
+    delete axios.defaults.headers.common["Authorization"];
+  };
+
   const checkAuth = useCallback(async () => {
-    if (!state.isAuthenticated && state.loading) {
-      try {
-        const token =
-          document.cookie
-            .split("; ")
-            .find((row) => row.startsWith("token="))
-            ?.split("=")[1] || localStorage.getItem("token");
+    if (state.isAuthenticated || !state.loading) return; // ✅ Prevent unnecessary calls
 
-        if (!token) {
-          dispatch({ type: "AUTH_ERROR" });
-          return;
-        }
+    try {
+      const token =
+        document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("token="))
+          ?.split("=")[1] || localStorage.getItem("token");
 
-        const response = await axios.get(`${API_URL}/api/users/checkAuth`, {
-          withCredentials: true,
-        });
+      if (!token) {
+        dispatch({ type: "AUTH_ERROR" });
+        return;
+      }
 
-        const { user } = response.data;
-        if (user) {
-          dispatch({ type: "USER_LOADED", payload: user });
-          axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-          localStorage.setItem("user", JSON.stringify({ token, user }));
-        } else {
-          dispatch({ type: "AUTH_ERROR" });
-        }
-      } catch (error) {
-        console.error("❌ Auth check failed:", error);
+      const response = await axios.get(`${API_URL}/api/users/checkAuth`, {
+        withCredentials: true,
+      });
+
+      const { user } = response.data;
+      if (user) {
+        dispatch({ type: "USER_LOADED", payload: user });
+        setAuthorizationHeader(token);
+        localStorage.setItem("user", JSON.stringify({ token, user }));
+      } else {
         dispatch({ type: "AUTH_ERROR" });
       }
+    } catch (error) {
+      console.error("❌ Auth check failed:", error);
+      dispatch({ type: "AUTH_ERROR" });
     }
   }, [state.isAuthenticated, state.loading]);
 
@@ -84,7 +92,7 @@ export const AuthProvider = ({ children }) => {
         const { token, user } = JSON.parse(storedUser);
         if (user && token) {
           dispatch({ type: "LOGIN_SUCCESS", payload: user });
-          axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+          setAuthorizationHeader(token);
         } else {
           checkAuth();
         }
@@ -99,7 +107,7 @@ export const AuthProvider = ({ children }) => {
 
   const logout = useCallback(() => {
     localStorage.removeItem("user");
-    axios.defaults.headers.common["Authorization"] = null;
+    removeAuthorizationHeader();
     dispatch({ type: "LOGOUT_SUCCESS" });
   }, []);
 
@@ -112,7 +120,7 @@ export const AuthProvider = ({ children }) => {
     if (!state.loading) {
       console.log("🔄 AuthProvider state updated:", state);
     }
-  }, [state.isAuthenticated, state.user, state.loading]);
+  }, [state]);
 
   return (
     <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
@@ -121,7 +129,7 @@ export const AuthProvider = ({ children }) => {
 
 export const useAuthContext = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error("useAuthContext must be used within an AuthProvider");
   }
   return context;
