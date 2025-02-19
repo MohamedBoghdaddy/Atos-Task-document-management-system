@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import axios from "axios";
 import { useAuthContext } from "../context/AuthContext";
 
-const apiUrl = process.env.REACT_APP_API_URL || "http://localhost:4000";
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:4000";
 
 export const useLogout = () => {
   const { dispatch } = useAuthContext();
@@ -11,7 +11,7 @@ export const useLogout = () => {
     try {
       // Send the logout request to the server
       await axios.post(
-        `${apiUrl}/api/users/logout`,
+        `${API_URL}/api/users/logout`,
         {},
         { withCredentials: true }
       );
